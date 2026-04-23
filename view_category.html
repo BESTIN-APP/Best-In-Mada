@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - Rayon</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <style>
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --accent: #38bdf8; 
+            --gold: #facc15; 
+            --success: #22c55e;
+            --danger: #f43f5e;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            background: #000; 
+            color: var(--text-primary); 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+        }
+
+        .mobile-view { 
+            width: 100%; 
+            max-width: 430px; 
+            background-color: var(--bg); 
+            height: 100vh; 
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box; 
+        }
+
+        .header { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            padding: 16px;
+            flex-shrink: 0;
+        }
+        .back-btn { 
+            color: var(--text-primary); 
+            text-decoration: none; 
+            font-size: 1.8em; 
+            line-height: 1; 
+        }
+        .header h1 {
+            font-size: 1.2em;
+            margin: 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .search-container {
+            padding: 0 16px 16px 16px;
+            flex-shrink: 0;
+        }
+
+        .search-box { 
+            width: 100%; 
+            background: var(--card); 
+            border: 1px solid #334155; 
+            border-radius: 14px; 
+            padding: 14px; 
+            color: var(--text-primary); 
+            box-sizing: border-box; 
+            font-size: 1em; 
+        }
+
+        .products-list-container {
+            overflow-y: auto;
+            padding: 0 16px 16px 16px;
+            flex-grow: 1;
+        }
+
+        .product-card { 
+            background: var(--card); 
+            border-radius: 18px; 
+            padding: 12px; 
+            margin-bottom: 16px; 
+            display: flex; 
+            gap: 16px; 
+            border: 1px solid rgba(255,255,255,0.08); 
+            align-items: center; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .prod-img { 
+            width: 80px; 
+            height: 80px; 
+            background: #000; 
+            border-radius: 14px; 
+            object-fit: cover; 
+            border: 1px solid #334155;
+            flex-shrink: 0;
+        }
+        .prod-info { flex-grow: 1; }
+        .prod-name { 
+            font-weight: 700; 
+            font-size: 1.1em; 
+            margin: 0 0 4px 0; 
+            color: var(--text-primary); 
+            text-transform: capitalize; 
+        }
+        .prod-ref { 
+            font-size: 0.75em; 
+            color: var(--gold); 
+            font-weight: 600; 
+            display: block; 
+            margin-bottom: 8px; 
+        }
+        .prod-meta { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-top: 8px; 
+        }
+        .price { 
+            color: var(--success); 
+            font-weight: 700; 
+            font-size: 1em; 
+        }
+        .stock-tag { 
+            font-size: 0.9em; 
+            color: var(--text-secondary); 
+        }
+        .stock-tag b {
+            color: var(--text-primary);
+        }
+
+        .card-actions { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 16px; 
+            border-top: 1px solid #334155; 
+            padding-top: 12px; 
+        }
+        .btn-action { 
+            flex: 1; 
+            padding: 10px; 
+            border-radius: 12px; 
+            border: none; 
+            font-size: 0.85em; 
+            font-weight: 700; 
+            cursor: pointer; 
+            color: white; 
+            transition: background-color 0.2s;
+        }
+        .btn-edit { background: rgba(56, 189, 248, 0.15); color: var(--accent); }
+        .btn-arch { background: rgba(244, 63, 94, 0.1); color: var(--danger); }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
+        .modal-content { background: var(--card); padding: 24px; border-radius: 24px; width: 100%; max-width: 350px; border: 1px solid var(--accent); }
+        .modal-content label { display: block; font-size: 0.8em; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+        .modal-content input { 
+            width: 100%; 
+            padding: 14px; 
+            margin-bottom: 16px; 
+            border-radius: 12px; 
+            border: 1px solid #334155; 
+            background: var(--bg); 
+            color: var(--text-primary); 
+            box-sizing: border-box; 
+            font-size: 1em;
+        }
+        .modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+        .modal-btns button { padding: 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; font-size: 0.9em; }
+        .btn-save { background: var(--success); color: #fff; }
+        .btn-cancel { background: #334155; color: var(--text-primary); }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+<div class="mobile-view">
+    <div class="header">
+        <a href="articles.html" class="back-btn">‹</a>
+        <h1 id="catTitle">Chargement...</h1>
+    </div>
+
+    <div class="search-container">
+        <input type="text" class="search-box" id="searchInput" placeholder="Rechercher un article..." oninput="filterProducts()">
+    </div>
+
+    <div id="productsList" class="products-list-container"></div>
+</div>
+
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <h3 id="modalArtName" style="margin-top:0; margin-bottom: 20px;">Modifier article</h3>
+        <label for="editPrix">Nouveau prix (Ar)</label>
+        <input type="number" id="editPrix" min="0">
+        <label for="editAddStock">Réapprovisionnement (ajouter)</label>
+        <input type="number" id="editAddStock" min="0" value="0">
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeModal()">ANNULER</button>
+            <button class="btn-save" onclick="confirmSave()">ENREGISTRER</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const categoryName = params.get('cat');
+    document.getElementById('catTitle').innerText = categoryName || "Rayon";
+
+    const CATS = [
+        { id: "ALR", name: "ALIMENTATION & RESTAURATION", aliases: ["ÉPICERIE & CONSOMMABLES", "ALIMENTATION : PPN", "RESTAURATION & GOURMANDISES", "EPI"] },
+        { id: "MDA", name: "MODE & APPARENCE", aliases: ["MODE & HABILLAGE", "MODE & TEXTILES", "MOD"] },
+        { id: "BEH", name: "BEAUTÉ & HYGIÈNE", aliases: ["BEAUTÉ & COSMÉTIQUES", "BEAUTE ET COSMETIQUE", "BCO"] },
+        { id: "VEM", name: "VÉHICULES & MÉCANIQUE (AUTO/MOTO)", aliases: ["AUTO & MOTO", "AUT"] },
+        { id: "HTM", name: "HIGH-TECH & MULTIMÉDIA", aliases: ["HIGH-TECH & ÉLECTRONIQUE", "ELECTRONIQUE & HIGH TECH", "HTE", "ELC"] },
+        { id: "MAE", name: "MAISON & ÉQUIPEMENT", aliases: ["MAISON & DÉCORATION", "MAISON & DECO", "MDE", "HOM"] },
+        { id: "CBR", name: "CONSTRUCTION & BRICOLAGE (QUINCAILLERIE)", aliases: ["BRICOLAGE & OUTILS", "BRI"] },
+        { id: "SBE", name: "SANTÉ & BIEN-ÊTRE", aliases: [] },
+        { id: "ENJ", name: "ENFANCE & JOUETS", aliases: ["ENFANTS & BÉBÉS", "ENF"] },
+        { id: "FBS", name: "FOURNITURES DE BUREAU & SCOLAIRE", aliases: [] },
+        { id: "SPL", name: "SPORT & LOISIRS", aliases: [] },
+        { id: "CUC", name: "CULTURE & CADEAUX", aliases: [] },
+        { id: "SRV", name: "SERVICES (PRESTATIONS)", aliases: [] },
+        { id: "ENG", name: "ÉNERGIE & GAZ", aliases: [] },
+        { id: "DIV", name: "DIVERS / AUTRES", aliases: ["DIVERS"] }
+    ];
+
+    const categoryMap = Object.fromEntries(
+        CATS.flatMap(c => [[c.name, c.id], [c.id, c.name], ...((c.aliases || []).map(a => [a, c.id]))])
+    );
+
+    let allArticlesCached = [];
+    let currentArtId = null;
+
+    async function loadProducts() {
+        if (typeof db === "undefined" || !db) {
+            setTimeout(loadProducts, 200);
+            return;
+        }
+
+        try {
+            const allLocal = await localDB.getAll('articles');
+            const catId = categoryMap[categoryName] || categoryName;
+            const catObj = CATS.find(c => c.id === catId || c.name === categoryName);
+            const aliases = new Set([categoryName, catId, ...(catObj?.aliases || [])]);
+
+            allArticlesCached = (allLocal || [])
+                .filter(a => {
+                    const cat = a.categorie || a.categories_id || '';
+                    const notArchived = a.archived === false || a.archived === undefined;
+                    return aliases.has(cat) && notArchived;
+                })
+                .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+            renderList(allArticlesCached);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function renderList(list) {
+        const container = document.getElementById('productsList');
+
+        if (list.length === 0) {
+            container.innerHTML = `<p style="text-align:center; margin-top:50px; opacity:0.5;">Aucun article trouvé.</p>`;
+            return;
+        }
+
+        container.innerHTML = list.map(art => {
+            const init = parseInt(art.stock_initial || 0, 10) || 0;
+            const vendu = parseInt(art.total_vendu || 0, 10) || 0;
+            const reserve = parseInt(art.stock_reserve || 0, 10) || 0;
+            const phys = init - vendu - reserve;
+
+            return `
+                <div class="product-card">
+                    <img src="${art.image_url || 'BESTIN.png'}" class="prod-img" onerror="this.src='BESTIN.png'">
+                    <div class="prod-info">
+                        <span class="prod-ref">${art.reference || 'REF-TEMP'}</span>
+                        <h3 class="prod-name">${art.nom || 'Article'}</h3>
+                        <div class="prod-meta">
+                            <span class="price">${new Intl.NumberFormat().format(art.prix || 0)} Ar</span>
+                            <span class="stock-tag">Stock: <b>${phys}</b></span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-action btn-arch" onclick="archiveArt('${art.id}')">🗑️ ARCHIVER</button>
+                            <button class="btn-action btn-edit" onclick="openEdit('${art.id}')">✏️ MODIFIER</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function filterProducts() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = allArticlesCached.filter(a =>
+            (a.nom || '').toLowerCase().includes(query) ||
+            ((a.reference || '').toLowerCase().includes(query))
+        );
+        renderList(filtered);
+    }
+
+    function openEdit(id) {
+        currentArtId = id;
+        const art = allArticlesCached.find(item => item.id === id);
+        if (!art) return;
+
+        document.getElementById('modalArtName').innerText = art.nom || 'Article';
+        document.getElementById('editPrix').value = art.prix || 0;
+        document.getElementById('editAddStock').value = 0;
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
+
+    async function confirmSave() {
+        const newPrix = parseFloat(document.getElementById('editPrix').value) || 0;
+        const addQty = parseInt(document.getElementById('editAddStock').value, 10) || 0;
+
+        if (addQty < 0) {
+            alert("Le réapprovisionnement doit être positif.");
+            return;
+        }
+
+        try {
+            const art = allArticlesCached.find(item => item.id === currentArtId);
+            if (!art) return;
+
+            const prevPrix = art.prix || 0;
+            const prevStock = parseInt(art.stock_initial || 0, 10) || 0;
+
+            const updated = {
+                ...art,
+                prix: newPrix,
+                stock_initial: addQty > 0 ? prevStock + addQty : prevStock,
+                updated_at: new Date().toISOString()
+            };
+
+            await localDB.save('articles', updated);
+            await localDB.addToSyncQueue('articles', 'UPDATE', updated);
+
+            if (newPrix !== prevPrix) {
+                await logActivity('ARTICLE', `Prix modifié • ${updated.nom} • ${prevPrix} → ${newPrix} Ar`);
+            }
+
+            if (addQty > 0) {
+                await logActivity('ARTICLE', `Réapprovisionnement • ${updated.nom} • +${addQty} (Init ${prevStock} → ${updated.stock_initial})`);
+            }
+
+            if (navigator.onLine && typeof syncData === "function") {
+                syncData();
+            }
+
+            closeModal();
+            await loadProducts();
+        } catch (e) {
+            console.error(e);
+            alert("Erreur de modification");
+        }
+    }
+
+    async function archiveArt(id) {
+        if (!confirm("Archiver cet article ? Il ne sera plus visible dans le rayon.")) return;
+
+        try {
+            const art = allArticlesCached.find(item => item.id === id);
+            if (!art) return;
+
+            const updated = {
+                ...art,
+                archived: true,
+                updated_at: new Date().toISOString()
+            };
+
+            await localDB.save('articles', updated);
+            await localDB.addToSyncQueue('articles', 'UPDATE', updated);
+            await logActivity('ARCHIVE', `Article archivé • ${updated.nom}`);
+
+            if (navigator.onLine && typeof syncData === "function") {
+                syncData();
+            }
+
+            await loadProducts();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    window.addEventListener('online', loadProducts);
+    document.addEventListener('DOMContentLoaded', loadProducts);
+</script>
+
+</body>
+</html>

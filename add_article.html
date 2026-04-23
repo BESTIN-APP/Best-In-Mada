@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - Ajouter Article</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <style>
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --accent: #38bdf8; 
+            --gold: #facc15; 
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --success: #22c55e;
+            --warn: #f97316;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin: 0; 
+            background-color: #000; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            color: var(--text-primary); 
+            display: flex; 
+            justify-content: center; 
+        }
+
+        .mobile-view { 
+            width: 100%; 
+            max-width: 430px; 
+            background-color: var(--bg); 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box; 
+        }
+
+        .header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 16px;
+            flex-shrink: 0;
+        }
+        .back-btn { 
+            font-size: 1.8em; 
+            text-decoration: none; 
+            color: var(--text-primary); 
+            line-height: 1; 
+        }
+        .header h1 {
+            margin:0; 
+            font-size: 1.2em; 
+            font-weight: 700;
+        }
+
+        .content-scroll {
+            overflow-y: auto;
+            padding: 0 16px 16px 16px;
+            flex-grow: 1;
+        }
+
+        .form-group { margin-bottom: 20px; }
+        
+        label { 
+            display: block; 
+            font-size: 0.8em; 
+            color: var(--text-secondary); 
+            margin-bottom: 8px; 
+            text-transform: uppercase; 
+            font-weight: 600; 
+            letter-spacing: 0.5px; 
+        }
+        
+        input, select { 
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 12px; 
+            border: 1px solid #334155; 
+            background: var(--card); 
+            color: var(--text-primary); 
+            box-sizing: border-box; 
+            outline: none; 
+            font-size: 1em; 
+        }
+        
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.7rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+        }
+
+        .img-placeholder { 
+            width: 100%; 
+            height: 180px; 
+            background: var(--card); 
+            border-radius: 16px; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            border: 2px dashed #334155; 
+            cursor: pointer; 
+            overflow: hidden; 
+            position: relative; 
+            color: var(--text-secondary);
+        }
+        .img-placeholder:hover {
+            border-color: var(--accent);
+        }
+        .img-placeholder .placeholder-icon {
+            font-size: 2.5em;
+            margin-bottom: 8px;
+        }
+        .img-placeholder img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+
+        .btn-main { 
+            width: 100%; 
+            padding: 16px; 
+            border-radius: 14px; 
+            border: none; 
+            background: var(--accent); 
+            color: white; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 1em; 
+            letter-spacing: 1px; 
+            margin-top: 10px; 
+            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.2); 
+        }
+        .btn-main:disabled {
+            opacity: .7;
+            cursor: not-allowed;
+        }
+        
+        #status-tag { 
+            font-size: 0.75em; 
+            padding: 6px 12px; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+        }
+
+        #sync-note {
+            font-size: 0.78em;
+            margin-top: 12px;
+            text-align: center;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <div class="mobile-view">
+        <div class="header">
+            <a href="articles.html" class="back-btn">‹</a>
+            <h1>NOUVEL ARTICLE</h1>
+            <div id="status-tag">VÉRIF...</div>
+        </div>
+
+        <div class="content-scroll">
+            <div class="form-group">
+                <label>VISUEL PRODUIT</label>
+                <div class="img-placeholder" onclick="document.getElementById('fileInput').click()">
+                    <div id="txt-photo">
+                        <div class="placeholder-icon">📸</div>
+                        <div>Appuyer pour ajouter</div>
+                    </div>
+                    <img id="prev" style="display:none">
+                </div>
+                <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleImage(this)">
+            </div>
+
+            <div class="form-group">
+                <label>CATÉGORIE</label>
+                <select id="categorie" onchange="onCategoryChange()" required>
+                    <option value="">-- Sélectionner --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>SOUS-CATÉGORIE</label>
+                <select id="sous_categorie" onchange="generateRef()" disabled required>
+                    <option value="">-- Choisir d'abord une catégorie --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>NOM DE L'ARTICLE *</label>
+                <input type="text" id="nom" placeholder="Ex: Chemise Slim Fit">
+            </div>
+
+            <div class="form-group">
+                <label>RÉFÉRENCE UNIQUE</label>
+                <input type="text" id="ref" readonly style="background: rgba(0,0,0,0.2); color: var(--gold); border-style: dashed;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>PRIX (AR) *</label>
+                    <input type="number" id="prix" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>STOCK INITIAL *</label>
+                    <input type="number" id="stock" placeholder="0">
+                </div>
+            </div>
+
+            <button class="btn-main" id="btnSave" onclick="save()">ENREGISTRER L'ARTICLE</button>
+            <div id="sync-note">L'article est d'abord enregistré localement puis synchronisé automatiquement.</div>
+        </div>
+    </div>
+
+    <script>
+        let currentBase64 = null;
+
+        const CATS = [
+            { id: "ALR", name: "ALIMENTATION & RESTAURATION", sub: [ { id: "FFS", name: "FAST-FOOD & SNACKS" }, { id: "BLP", name: "BOULANGERIE & PÂTISSERIE" }, { id: "EFB", name: "ÉPICERIE FINE & BOISSONS" }, { id: "PRF", name: "PRODUITS FRAIS" } ] },
+            { id: "MDA", name: "MODE & APPARENCE", sub: [ { id: "PAP", name: "PRÊT-À-PORTER" }, { id: "CHS", name: "CHAUSSURES" }, { id: "LIA", name: "LINGERIE & ACCESSOIRES" } ] },
+            { id: "BEH", name: "BEAUTÉ & HYGIÈNE", sub: [ { id: "COS", name: "COSMÉTIQUES" }, { id: "COE", name: "COIFFURE & ESTHÉTIQUE" }, { id: "PAR", name: "PARFUMERIE" } ] },
+            { id: "VEM", name: "VÉHICULES & MÉCANIQUE (AUTO/MOTO)", sub: [ { id: "PID", name: "PIÈCES DÉTACHÉES" }, { id: "ACT", name: "ACCESSOIRES & TUNING" }, { id: "ENT", name: "ENTRETIEN" } ] },
+            { id: "HTM", name: "HIGH-TECH & MULTIMÉDIA", sub: [ { id: "TEL", name: "TÉLÉPHONIE" }, { id: "INF", name: "INFORMATIQUE" }, { id: "ACC", name: "ACCESSOIRES" } ] },
+            { id: "MAE", name: "MAISON & ÉQUIPEMENT", sub: [ { id: "ELM", name: "ÉLECTROMÉNAGER" }, { id: "AMB", name: "AMEUBLEMENT" }, { id: "DEC", name: "DÉCORATION" } ] },
+            { id: "CBR", name: "CONSTRUCTION & BRICOLAGE (QUINCAILLERIE)", sub: [ { id: "MAT", name: "MATÉRIAUX" }, { id: "OUT", name: "OUTILLAGE" }, { id: "ELP", name: "ÉLECTRICITÉ & PLOMBERIE" } ] },
+            { id: "SBE", name: "SANTÉ & BIEN-ÊTRE", sub: [ { id: "PHP", name: "PHARMACIE & PARAPHARMACIE" }, { id: "OPT", name: "OPTIQUE" } ] },
+            { id: "ENJ", name: "ENFANCE & JOUETS", sub: [ { id: "PUE", name: "PUÉRICULTURE" }, { id: "JEU", name: "JEUX" } ] },
+            { id: "FBS", name: "FOURNITURES DE BUREAU & SCOLAIRE", sub: [ { id: "PTE", name: "PAPETERIE" }, { id: "LIB", name: "LIBRAIRIE" } ] },
+            { id: "SPL", name: "SPORT & LOISIRS", sub: [ { id: "EQP", name: "ÉQUIPEMENTS" }, { id: "CPL", name: "CAMPING & PLEIN AIR" } ] },
+            { id: "CUC", name: "CULTURE & CADEAUX", sub: [ { id: "ART", name: "ARTISANAT" }, { id: "FEV", name: "FLEURS & ÉVÉNEMENTIEL" } ] },
+            { id: "SRV", name: "SERVICES (PRESTATIONS)", sub: [ { id: "MDO", name: "MAIN D'ŒUVRE" }, { id: "LOG", name: "LOGISTIQUE" } ] },
+            { id: "ENG", name: "ÉNERGIE & GAZ", sub: [ { id: "COM", name: "COMBUSTIBLES" } ] },
+            { id: "DIV", name: "DIVERS / AUTRES", sub: [ { id: "AUT", name: "AUTRES" } ] }
+        ];
+
+        function initForm() {
+            const select = document.getElementById('categorie');
+            CATS.forEach(c => {
+                const opt = new Option(c.name, c.name);
+                opt.dataset.catId = c.id;
+                select.add(opt);
+            });
+            updateStatus();
+        }
+
+        function onCategoryChange() {
+            const categoryName = document.getElementById('categorie').value;
+            const subSelect = document.getElementById('sous_categorie');
+            const catObj = CATS.find(c => c.name === categoryName);
+
+            subSelect.innerHTML = '';
+
+            if (!catObj) {
+                subSelect.disabled = true;
+                subSelect.add(new Option("-- Choisir d'abord une catégorie --", ''));
+                document.getElementById('ref').value = '';
+                return;
+            }
+
+            subSelect.disabled = false;
+            subSelect.add(new Option('-- Sélectionner --', ''));
+            catObj.sub.forEach(s => {
+                const opt = new Option(s.name, s.name);
+                opt.dataset.subId = s.id;
+                subSelect.add(opt);
+            });
+
+            generateRef();
+        }
+
+        function generateRef() {
+            const categoryName = document.getElementById('categorie').value;
+            const subName = document.getElementById('sous_categorie').value;
+            const catObj = CATS.find(c => c.name === categoryName);
+            const subObj = catObj ? catObj.sub.find(s => s.name === subName) : null;
+
+            if (catObj && subObj) {
+                const random = Math.floor(1000 + Math.random() * 9000);
+                document.getElementById('ref').value = `${catObj.id}-${subObj.id}-${random}`;
+            } else {
+                document.getElementById('ref').value = '';
+            }
+        }
+
+        async function compressImage(file, maxWidth = 1280, quality = 0.72) {
+            const dataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            const img = await new Promise((resolve, reject) => {
+                const i = new Image();
+                i.onload = () => resolve(i);
+                i.onerror = reject;
+                i.src = dataUrl;
+            });
+
+            const ratio = Math.min(1, maxWidth / img.width);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * ratio);
+            canvas.height = Math.round(img.height * ratio);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', quality);
+        }
+
+        async function handleImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            try {
+                currentBase64 = await compressImage(file);
+                document.getElementById('prev').src = currentBase64;
+                document.getElementById('prev').style.display = 'block';
+                document.getElementById('txt-photo').style.display = 'none';
+            } catch (e) {
+                console.error(e);
+                alert('Impossible de compresser l\'image.');
+            }
+        }
+
+        function getSelectedCategoryIds() {
+            const catSelect = document.getElementById('categorie');
+            const subSelect = document.getElementById('sous_categorie');
+            const catOpt = catSelect.options[catSelect.selectedIndex];
+            const subOpt = subSelect.options[subSelect.selectedIndex];
+
+            return {
+                categories_id: catOpt?.dataset?.catId || null,
+                sous_categorie_id: subOpt?.dataset?.subId || null
+            };
+        }
+
+        function updateStatus() {
+            const tag = document.getElementById('status-tag');
+            const note = document.getElementById('sync-note');
+            if (!tag) return;
+
+            const isOnline = navigator.onLine;
+            const pending = JSON.parse(localStorage.getItem('bestin_pending_sync_count') || '0');
+            const backendUnavailable = JSON.parse(localStorage.getItem('bestin_backend_unavailable') || 'false');
+
+            tag.innerText = isOnline ? "En Ligne" : "Hors-Ligne";
+            tag.style.background = isOnline ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)";
+            tag.style.color = isOnline ? "var(--success)" : "var(--warn)";
+
+            if (!isOnline) {
+                note.innerText = "Mode hors-ligne actif : l'article sera enregistré localement puis synchronisé plus tard.";
+                return;
+            }
+
+            if (backendUnavailable && pending > 0) {
+                note.innerText = "Serveur indisponible : vos données restent sauvegardées localement.";
+                return;
+            }
+
+            if (pending > 0) {
+                note.innerText = `${pending} opération(s) en attente de synchronisation.`;
+                return;
+            }
+
+            note.innerText = "L'article est d'abord enregistré localement puis synchronisé automatiquement.";
+        }
+
+        async function save() {
+            const btn = document.getElementById('btnSave');
+            const prof = JSON.parse(localStorage.getItem('bestin_profile') || '{}');
+            
+            if (!prof.id || !prof.vendeur_id) {
+                alert("Erreur : Session expirée.");
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const stockValue = parseInt(document.getElementById('stock').value, 10) || 0;
+
+            const categoryIds = getSelectedCategoryIds();
+            const now = new Date().toISOString();
+            const data = {
+                id: crypto.randomUUID(),
+                user_id: prof.id,
+                vendeur_id: prof.vendeur_id,
+                nom: document.getElementById('nom').value.trim(),
+                categorie: document.getElementById('categorie').value,
+                categories_id: categoryIds.categories_id,
+                sous_categorie: document.getElementById('sous_categorie').value,
+                sous_categorie_id: categoryIds.sous_categorie_id,
+                prix: parseFloat(document.getElementById('prix').value) || 0,
+                stock_initial: stockValue,
+                total_vendu: 0,
+                stock_reserve: 0,
+                reference: document.getElementById('ref').value,
+                image_url: currentBase64,
+                created_at: now,
+                updated_at: now,
+                last_updated_at: now,
+                archived: false
+            };
+
+            if (!data.nom || !data.categorie || !data.sous_categorie) {
+                alert("Veuillez remplir le nom, la catégorie et la sous-catégorie.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "SAUVEGARDE...";
+
+            try {
+                await localDB.save('articles', data);
+                await localDB.addToSyncQueue('articles', 'INSERT', data);
+                await logActivity('ARTICLE', `Article ajouté • ${data.nom} • Stock ${data.stock_initial}`);
+
+                if (navigator.onLine && typeof syncData === 'function') {
+                    syncData();
+                }
+
+                alert("Article ajouté avec succès !");
+                window.location.href = "articles.html";
+            } catch (e) {
+                console.error(e);
+                alert("Erreur lors de l'enregistrement local.");
+                btn.disabled = false;
+                btn.innerText = "ENREGISTRER L'ARTICLE";
+            }
+        }
+
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+        window.addEventListener('bestin-sync-state', updateStatus);
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            initForm();
+        });
+    </script>
+</body>
+</html>

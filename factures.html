@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - Factures</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <style>
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --accent: #38bdf8; 
+            --gold: #facc15; 
+            --success: #22c55e;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin: 0; 
+            background-color: #000; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            color: var(--text-primary); 
+        }
+
+        .mobile-view { 
+            width: 100%; 
+            max-width: 430px; 
+            margin: auto; 
+            background-color: var(--bg); 
+            height: 100vh; 
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box; 
+        }
+
+        .header { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            padding: 16px;
+            flex-shrink: 0;
+        }
+        .back-btn { 
+            font-size: 1.8em; 
+            text-decoration: none; 
+            color: var(--text-primary); 
+            cursor: pointer; 
+        }
+        .header h1 { margin:0; font-size: 1.2em; font-weight: 700; }
+
+        .filters { 
+            background: var(--card); 
+            border: 1px solid #334155; 
+            border-radius: 18px; 
+            padding: 16px; 
+            margin: 0 16px 16px 16px;
+            flex-shrink: 0;
+        }
+        .filters input { 
+            width:100%; 
+            box-sizing:border-box; 
+            background:var(--bg); 
+            border:1px solid #334155; 
+            color:var(--text-primary); 
+            border-radius:12px; 
+            padding:14px; 
+            margin-bottom:12px; 
+            font-size: 1em;
+        }
+        .filters input:last-child { margin-bottom: 0; }
+        
+        .date-grid { 
+            display: flex; 
+            gap: 1rem;
+        }
+        
+        input[type="date"] {
+            flex: 1;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            height: 45px;
+            padding: 0 1rem;
+            margin-bottom: 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            color-scheme: dark; 
+        }
+        
+        input[type="date"]::before {
+            content: attr(placeholder);
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.7);
+            margin-left: auto;
+        }
+        
+        input[type="date"]:valid::before {
+            display: none;
+        }
+        
+        input[type="date"]:invalid {
+           color: transparent;
+        }
+        input[type="date"]:focus {
+           color: var(--text-primary);
+        }
+
+        .invoice-list-container {
+            overflow-y: auto;
+            padding: 0 16px 16px 16px;
+            flex-grow: 1;
+        }
+
+        .invoice-card { 
+            background: var(--card); 
+            border-radius: 18px; 
+            padding: 16px; 
+            margin-bottom: 12px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border: 1px solid rgba(255,255,255,0.08); 
+            gap: 10px; 
+        }
+        .inv-info { min-width:0; flex:1; }
+        .inv-info .ref { color:var(--accent); font-weight:bold; font-size: 0.8em; margin-bottom: 8px; }
+        .inv-info .client { color: var(--text-primary); margin: 0; font-size: 1.1em; font-weight: 600; }
+        .inv-info .details { font-size: 0.85em; color: var(--text-secondary); margin: 4px 0; }
+        .inv-info .total { font-weight:bold; color:var(--success); font-size: 1.1em; margin-top: 8px; }
+        
+        .btn-print { 
+            background: var(--accent); 
+            color: var(--bg); 
+            border: none; 
+            padding: 10px 14px; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size:0.8em; 
+            flex-shrink: 0;
+        }
+
+        #infoState {
+            font-size: 0.78em;
+            color: var(--text-secondary);
+            text-align: center;
+            margin: 0 16px 14px 16px;
+            line-height: 1.5;
+        }
+
+        #printableInvoice { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #printableInvoice, #printableInvoice * { visibility: visible; }
+            #printableInvoice {
+                display: block !important; 
+                position: absolute; 
+                left: 0; top: 0; 
+                width: 100%;
+                color: black !important; 
+                background: white !important;
+                padding: 20px; 
+                font-family: Arial, sans-serif; 
+                font-size: 10pt; 
+                box-sizing: border-box;
+            }
+            #printableInvoice h2, #printableInvoice h3 { margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+            #printableInvoice p { margin: 4px 0; }
+            #printableInvoice .sub-header { font-size: 9pt; color: #333; }
+            #printableInvoice hr { border:none; border-top: 1px dashed #888; margin: 10px 0; }
+            #printableInvoice table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 10pt; }
+            #printableInvoice th, #printableInvoice td { padding: 8px 4px; text-align: left; }
+            #printableInvoice thead { border-bottom: 2px solid #000; }
+            #printableInvoice tfoot { border-top: 2px solid #000; font-weight: bold; }
+            #printableInvoice .text-right { text-align: right; }
+            #printableInvoice .text-center { text-align: center; }
+            #printableInvoice .footer-thanks { text-align:center; margin-top: 30px; font-size: 9pt; color: #333; }
+        }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+    <div id="printableInvoice">
+        <div style="text-align:center; margin-bottom: 20px;">
+            <h2 id="pBoutiqueNom">NOM BOUTIQUE</h2>
+            <p id="pBoutiqueAdresse" class="sub-header"></p>
+            <p id="pBoutiqueTel" class="sub-header"></p>
+        </div>
+
+        <h3>FACTURE N°: <span id="pRef"></span></h3>
+        <p><strong>Date :</strong> <span id="pDate"></span></p>
+        <hr>
+        <p><strong>Client :</strong> <span id="pClient"></span></p>
+        <p><strong>Contact :</strong> <span id="pClientContact"></span></p>
+        <p><strong>Adresse :</strong> <span id="pClientAdresse"></span></p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Article</th>
+                    <th class="text-center">Qté</th>
+                    <th class="text-right">P.U.</th>
+                    <th class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody id="pTableBody"></tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="font-size: 11pt;">NET À PAYER</td>
+                    <td id="pFinal" class="text-right" style="font-size: 11pt;">0 Ar</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <p class="footer-thanks">*** Merci de votre confiance ! ***</p>
+    </div>
+
+    <div class="mobile-view">
+        <div class="header">
+            <a href="dashboard.html" class="back-btn">‹</a>
+            <h1>Mes Factures</h1>
+        </div>
+
+        <div id="infoState">Chargement des factures locales...</div>
+
+        <div class="filters">
+            <input type="text" id="q" placeholder="🔎 Rechercher..." oninput="renderInvoices()">
+            <div class="date-grid">
+                <input type="date" id="dStart" onchange="renderInvoices()" placeholder="Date début" required>
+                <input type="date" id="dEnd" onchange="renderInvoices()" placeholder="Date fin" required>
+            </div>
+        </div>
+
+        <div id="invoiceList" class="invoice-list-container"></div>
+    </div>
+
+    <script>
+        let invoices = [];
+        let profile = null;
+        let articlePrixMap = new Map();
+
+        function getProfile() {
+            if (!profile) {
+                profile = JSON.parse(localStorage.getItem('bestin_profile') || '{}');
+            }
+            return profile || {};
+        }
+
+        function getVenteTotal(vente) {
+            if (vente.total_paye !== undefined && vente.total_paye !== null) {
+                return Number(vente.total_paye) || 0;
+            }
+            const unit = Number(vente.prix_unitaire || 0);
+            if (!Number.isNaN(unit) && unit > 0) {
+                return unit * (Number(vente.quantite || 0) || 0);
+            }
+            const mappedPrix = articlePrixMap.get(vente.article_id);
+            if (mappedPrix && mappedPrix > 0) {
+                return mappedPrix * (Number(vente.quantite || 0) || 0);
+            }
+            const prix = Number(vente.prix || 0);
+            const qty = Number(vente.quantite || 0);
+            if (!Number.isNaN(prix) && prix > 0 && qty > 0) {
+                return prix * qty;
+            }
+            return Number(vente.montant || 0) || 0;
+        }
+
+        function getUnitPrice(vente) {
+            const unit = Number(vente.prix_unitaire || 0);
+            if (!Number.isNaN(unit) && unit > 0) return unit;
+
+            const mappedPrix = articlePrixMap.get(vente.article_id);
+            if (mappedPrix && mappedPrix > 0) return mappedPrix;
+
+            const prix = Number(vente.prix || 0);
+            if (!Number.isNaN(prix) && prix > 0) return prix;
+
+            return 0;
+        }
+
+        function formatDate(value) {
+            if (!value) return '';
+            return new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        function getReferenceFacture(vente) {
+            if (vente.reference_facture) return vente.reference_facture;
+            const datePart = (vente.created_at || new Date().toISOString()).replace(/[-:T.Z]/g, '').slice(0, 12);
+            const idPart = (vente.id || Math.random().toString(36).slice(2, 8)).toString().slice(-6);
+            return `FAC-${datePart}-${idPart}`;
+        }
+
+        function updateInfoState(message) {
+            document.getElementById('infoState').innerText = message;
+        }
+
+        async function loadInvoices() {
+            const container = document.getElementById('invoiceList');
+            const currentProfile = getProfile();
+
+            if (!currentProfile.id || !currentProfile.vendeur_id) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const [ventes, articles] = await Promise.all([
+                    localDB.getAll('ventes'),
+                    localDB.getAll('articles')
+                ]);
+
+                articlePrixMap = new Map((articles || []).map((a) => [a.id, Number(a.prix || 0) || 0]));
+
+                const ventesSource = (ventes || [])
+                    .filter((v) => v.vendeur_id === currentProfile.vendeur_id)
+                    .filter((v) => v.statut === 'VENDRE' || v.statut === 'VENTE')
+                    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+                for (const vente of ventesSource) {
+                    if (!vente.reference_facture) {
+                        const updated = { ...vente, reference_facture: getReferenceFacture(vente) };
+                        await localDB.save('ventes', updated);
+                        await localDB.addToSyncQueue('ventes', 'UPDATE', updated);
+                        Object.assign(vente, updated);
+                    }
+                }
+
+                if (navigator.onLine && typeof syncData === 'function') {
+                    syncData();
+                }
+
+                invoices = ventesSource.map((v) => ({ ...v, reference_facture: getReferenceFacture(v) }));
+
+                updateInfoState(
+                    navigator.onLine
+                        ? `${invoices.length} facture(s) disponibles`
+                        : `${invoices.length} facture(s) disponibles hors-ligne`
+                );
+
+                renderInvoices();
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = "Erreur de chargement.";
+                updateInfoState("Erreur de lecture locale.");
+            }
+        }
+
+        function renderInvoices() {
+            const container = document.getElementById('invoiceList');
+            const q = (document.getElementById('q')?.value || '').toLowerCase();
+            const dStart = document.getElementById('dStart')?.value || '';
+            const dEnd = document.getElementById('dEnd')?.value || '';
+
+            const rows = invoices.filter((v) => {
+                const d = String(v.created_at || '').split('T')[0];
+                const text = `${v.reference_facture || ''} ${v.client_nom || ''} ${v.article_nom || ''}`.toLowerCase();
+                const textOk = !q || text.includes(q);
+                const dateOk = (!dStart || d >= dStart) && (!dEnd || d <= dEnd);
+                return textOk && dateOk;
+            });
+
+            if (rows.length === 0) {
+                container.innerHTML = '<div style="opacity:0.4; text-align:center; padding:20px;">Aucune facture</div>';
+                return;
+            }
+
+            container.innerHTML = rows.map((v) => `
+                <div class="invoice-card">
+                    <div class="inv-info">
+                        <p class="ref">${v.reference_facture}</p>
+                        <h3 class="client">${v.client_nom || 'Client Comptant'}</h3>
+                        <p class="details">${v.article_nom || 'Article'} • ${formatDate(v.created_at)}</p>
+                        <p class="total">${getVenteTotal(v).toLocaleString()} Ar</p>
+                    </div>
+                    <button class="btn-print" onclick='imprimerFacture("${v.id}")'>IMPRIMER</button>
+                </div>
+            `).join('');
+        }
+
+        function imprimerFacture(id) {
+            const vente = invoices.find((v) => v.id === id);
+            if (!vente) return;
+
+            const shopProfile = getProfile();
+            document.getElementById('pBoutiqueNom').innerText = shopProfile.shop_name || "BEST'IN";
+            document.getElementById('pBoutiqueAdresse').innerText = shopProfile.adresse_boutique || "Adresse non configurée";
+            document.getElementById('pBoutiqueTel').innerText = "Tél: " + (shopProfile.phone || "N/A");
+
+            document.getElementById('pRef').innerText = vente.reference_facture;
+            document.getElementById('pClient').innerText = vente.client_nom || "Client Comptant";
+            document.getElementById('pClientContact').innerText = vente.client_contact || '-';
+            document.getElementById('pClientAdresse').innerText = vente.client_adresse || (vente.fulfillment_method === 'RETRAIT_BOUTIQUE' ? 'Retrait en boutique' : '-');
+            document.getElementById('pDate').innerText = new Date(vente.created_at).toLocaleString('fr-FR');
+            document.getElementById('pFinal').innerText = getVenteTotal(vente).toLocaleString() + ' Ar';
+
+            document.getElementById('pTableBody').innerHTML = `
+                <tr>
+                    <td>${vente.article_nom || 'Article'}</td>
+                    <td class="text-center">${vente.quantite || 0}</td>
+                    <td class="text-right">${getUnitPrice(vente).toLocaleString()} Ar</td>
+                    <td class="text-right">${getVenteTotal(vente).toLocaleString()} Ar</td>
+                </tr>
+            `;
+
+            window.print();
+        }
+
+        const waitForDB = setInterval(() => {
+            if (typeof localDB !== 'undefined' && typeof db !== 'undefined' && db) {
+                clearInterval(waitForDB);
+                loadInvoices();
+            }
+        }, 200);
+
+        window.addEventListener('online', loadInvoices);
+    </script>
+</body>
+</html>

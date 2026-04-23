@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - Notifications</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --accent: #38bdf8; 
+            --gold: #facc15; 
+            --orange: #f97316;
+            --red: #f43f5e;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            background: #000; 
+            color: var(--text-primary); 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+        }
+
+        .container { 
+            width: 100%; 
+            max-width: 430px; 
+            height: 100vh;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box; 
+        }
+
+        .header { 
+            display: flex; 
+            align-items: center; 
+            padding: 16px;
+            border-bottom: 1px solid var(--card); 
+            flex-shrink: 0;
+        }
+        .back-btn { 
+            color: var(--text-primary); 
+            text-decoration: none; 
+            font-size: 1.8em; 
+            margin-right: 15px; 
+            cursor: pointer; 
+        }
+        .header h2 {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .notif-list-container {
+            overflow-y: auto;
+            padding: 16px;
+            flex-grow: 1;
+        }
+
+        .notif-list { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+        }
+
+        .notif-card {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 16px;
+            border-left: 4px solid var(--accent);
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .notif-card.warning { border-left-color: var(--orange); }
+        .notif-card.danger { border-left-color: var(--red); }
+        .notif-card.welcome { border-left-color: var(--gold); }
+        .notif-card.info { border-left-color: var(--accent); }
+
+        .notif-title { 
+            font-weight: 700; 
+            font-size: 1.05em; 
+            display: block; 
+            margin-bottom: 6px; 
+            color: var(--text-primary); 
+        }
+        .notif-body { 
+            font-size: 0.9em; 
+            color: var(--text-secondary); 
+            line-height: 1.5; 
+            margin-bottom: 16px; 
+        }
+
+        .notif-link {
+            display: inline-block;
+            background: var(--bg);
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.85em;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            border: 1px solid #334155;
+            margin-right: 8px;
+            margin-top: 6px;
+        }
+
+        .notif-time {
+            font-size: 0.75em;
+            color: var(--text-secondary);
+            position: absolute;
+            top: 18px;
+            right: 16px;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .empty-state { 
+            text-align: center; 
+            margin-top: 50px; 
+            opacity: 0.6; 
+            font-size: 0.9rem; 
+            color: var(--text-secondary);
+        }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+    <div class="container">
+        <header class="header">
+            <a href="dashboard.html" class="back-btn">‹</a>
+            <h2>Notifications</h2>
+        </header>
+
+        <div class="notif-list-container">
+            <div id="list" class="notif-list"></div>
+        </div>
+    </div>
+
+    <script>
+        function getProfileData() {
+            return JSON.parse(localStorage.getItem('bestin_profile') || '{}');
+        }
+
+        function getCachedAbo() {
+            return JSON.parse(localStorage.getItem('cache_abo') || 'null');
+        }
+
+        function createNotif(title, body, type, links = []) {
+            const linksHtml = links.map(l => `<a href="${l.url}" class="notif-link">${l.text}</a>`).join(" ");
+            return `
+                <div class="notif-card ${type}">
+                    <span class="notif-time">Maintenant</span>
+                    <span class="notif-title">${title}</span>
+                    <p class="notif-body">${body}</p>
+                    <div class="notif-links">${linksHtml}</div>
+                </div>
+            `;
+        }
+
+        function getSubscriptionExpiry(profile) {
+            const cached = getCachedAbo();
+            if (cached && cached.date_fin) return cached.date_fin;
+            return profile.date_expiration || profile.subscription_until || profile.expiration_date || null;
+        }
+
+        function computePhys(article) {
+            const init = parseInt(article.stock_initial, 10) || 0;
+            const vendu = parseInt(article.total_vendu, 10) || 0;
+            const reserve = parseInt(article.stock_reserve, 10) || 0;
+            return init - vendu - reserve;
+        }
+
+        function getSyncInfo() {
+            return {
+                pending: JSON.parse(localStorage.getItem('bestin_pending_sync_count') || '0'),
+                backendUnavailable: JSON.parse(localStorage.getItem('bestin_backend_unavailable') || 'false')
+            };
+        }
+
+        async function checkNotifications() {
+            const profile = getProfileData();
+            const list = document.getElementById('list');
+            let html = "";
+
+            html += createNotif(
+                "Bienvenue sur BEST'IN ! 🚀",
+                "Maîtrisez votre application en consultant nos guides et nos conditions d'utilisation.",
+                "welcome",
+                [
+                    { text: "Guides", url: "guides.html" },
+                    { text: "Termes", url: "termes.html" }
+                ]
+            );
+
+            const { pending, backendUnavailable } = getSyncInfo();
+
+            if (!navigator.onLine) {
+                html += createNotif(
+                    "Mode hors-ligne actif",
+                    "Vous pouvez continuer à travailler. Vos données locales restent disponibles.",
+                    "info"
+                );
+            }
+
+            if (pending > 0) {
+                html += createNotif(
+                    backendUnavailable ? "Synchronisation en attente" : "Synchronisation locale en cours",
+                    backendUnavailable
+                        ? `${pending} opération(s) restent sauvegardées localement en attendant le retour du serveur.`
+                        : `${pending} opération(s) sont en attente de synchronisation.`,
+                    "warning"
+                );
+            }
+
+            const expiry = getSubscriptionExpiry(profile);
+            if (expiry) {
+                const now = new Date();
+                const exp = new Date(expiry);
+                const diffDays = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+
+                if (diffDays <= 3 && diffDays > 0) {
+                    html += createNotif(
+                        "Abonnement expire bientôt",
+                        `Il vous reste ${diffDays} jour(s). Renouvelez votre accès pour éviter une interruption.`,
+                        "warning",
+                        [{ text: "Renouveler", url: "abonnement.html" }]
+                    );
+                } else if (diffDays <= 0) {
+                    html += createNotif(
+                        "Abonnement expiré",
+                        "Votre accès est limité. Activez un abonnement pour retrouver toutes les fonctionnalités.",
+                        "danger",
+                        [{ text: "S'abonner", url: "abonnement.html" }]
+                    );
+                }
+            }
+
+            try {
+                const articles = await localDB.getAll('articles');
+                const ventes = await localDB.getAll('ventes');
+
+                const filteredArticles = (articles || []).filter(a => !profile.vendeur_id || a.vendeur_id === profile.vendeur_id);
+                const filteredVentes = (ventes || []).filter(v => !profile.vendeur_id || v.vendeur_id === profile.vendeur_id);
+
+                const reservations = filteredVentes.filter(v => v.statut === 'RESERVER' || v.statut === 'RESERVATION');
+                if (reservations.length > 0) {
+                    html += createNotif(
+                        "Réservations en cours",
+                        `Vous avez ${reservations.length} réservation(s) à finaliser.`,
+                        "warning",
+                        [{ text: "Voir les ventes", url: "ventes.html" }]
+                    );
+                }
+
+                const epuises = filteredArticles.filter(a => computePhys(a) <= 0);
+                if (epuises.length > 0) {
+                    html += createNotif(
+                        "Articles épuisés",
+                        `${epuises.length} article(s) sont en rupture de stock.`,
+                        "danger",
+                        [{ text: "Gérer le stock", url: "stocks.html" }]
+                    );
+                }
+
+                const stockBas = filteredArticles.filter(a => {
+                    const alerte = parseInt(a.stock_alerte || 0, 10) || 0;
+                    return alerte > 0 && computePhys(a) > 0 && computePhys(a) <= alerte;
+                });
+
+                if (stockBas.length > 0) {
+                    html += createNotif(
+                        "Stock bas",
+                        `${stockBas.length} article(s) approchent du seuil d'alerte.`,
+                        "warning",
+                        [{ text: "Voir les stocks", url: "stocks.html" }]
+                    );
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            list.innerHTML = html || `<div class="empty-state">Aucune notification pour le moment.</div>`;
+        }
+
+        const waitForDB = setInterval(() => {
+            if (typeof localDB !== 'undefined' && typeof db !== 'undefined' && db) {
+                clearInterval(waitForDB);
+                checkNotifications();
+            }
+        }, 200);
+
+        window.addEventListener('bestin-sync-state', checkNotifications);
+        window.addEventListener('online', checkNotifications);
+        window.addEventListener('offline', checkNotifications);
+    </script>
+</body>
+</html>

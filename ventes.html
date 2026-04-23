@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - Vendre & Réserver</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <style>
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --accent: #38bdf8; 
+            --gold: #facc15; 
+            --success: #22c55e;
+            --danger: #f43f5e;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: var(--text-primary); 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+        }
+
+        .mobile-view { 
+            width: 100%; 
+            max-width: 430px; 
+            background: var(--bg); 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: auto; 
+            box-sizing: border-box;
+        }
+        
+        .header { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            padding: 16px 16px 12px 16px;
+            flex-shrink: 0;
+        }
+
+        .btn-back { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 40px; 
+            height: 40px; 
+            background: var(--card); 
+            border-radius: 50%; 
+            color: var(--text-primary); 
+            text-decoration: none; 
+            font-size: 1.5em; 
+            border: 1px solid rgba(255,255,255,0.1); 
+        }
+
+        .header h2 { margin: 0; font-size: 1.2em; font-weight: 700; }
+
+        .search-container {
+            padding: 0 16px 16px 16px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        #searchArt {
+            width: 100%;
+            padding: 16px 16px 16px 48px;
+            border-radius: 16px;
+            border: 1px solid #334155;
+            background-color: var(--card);
+            color: var(--text-primary);
+            font-size: 1em;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-sizing: border-box;
+        }
+        .search-icon {
+            position: absolute;
+            left: 32px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        .content-wrapper {
+            overflow-y: auto;
+            padding: 0 16px 16px 16px;
+            flex-grow: 1;
+        }
+
+        .view-tabs {
+            display: flex;
+            background-color: var(--card);
+            border-radius: 14px;
+            padding: 4px;
+            margin-bottom: 16px;
+        }
+        .view-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .view-tab.active {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .filter-box {
+            margin-bottom: 20px;
+        }
+        #filterClient {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            background-color: var(--card);
+            color: var(--text-primary);
+            font-size: 0.9em;
+            box-sizing: border-box;
+        }
+
+        .grid-container { display: grid; grid-template-columns: 1fr; gap: 16px; }
+
+        .item-card { 
+            background: var(--card); 
+            border-radius: 18px; 
+            padding: 16px; 
+            border: 1px solid rgba(255,255,255,0.08); 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .item-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .item-card-info { flex-grow: 1; }
+        .item-card-info .client-name { font-weight: 700; color: var(--text-primary); font-size: 1.05em; }
+        .item-card-info .client-contact { font-size: 0.85em; color: var(--text-secondary); }
+        
+        .item-card-body { border-top: 1px solid #334155; border-bottom: 1px solid #334155; padding: 12px 0; margin: 12px 0; }
+        .item-card-body .article-name { font-weight: 600; color: var(--text-primary); }
+        .item-card-body .article-details { font-size: 0.9em; color: var(--text-secondary); }
+
+        .item-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .btn-op { width: 100%; border: none; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.85em; transition: transform 0.1s; }
+        .btn-op:active { transform: scale(0.97); }
+
+        .btn-confirm { background: var(--success); color: #fff; }
+        .btn-cancel { background: rgba(244, 63, 94, 0.1); color: var(--danger); }
+        .btn-edit { background: var(--accent); color: #fff; }
+
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .modal-box { background: var(--card); padding: 24px; border-radius: 24px; width: 90%; max-width: 380px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 40px rgba(0,0,0,0.4); overflow-y: auto; max-height: 90vh;}
+        .modal-box label { display: block; font-size: 0.8em; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+        
+        .modal-box input, .modal-box select, .modal-box textarea {
+            width: 100%;
+            background-color: var(--bg);
+            border: 1px solid #334155;
+            padding: 14px;
+            font-size: 1em;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            font-weight: 500;
+            box-sizing: border-box;
+        }
+
+        .tabs { display: flex; background: var(--bg); padding: 4px; border-radius: 14px; margin-bottom: 24px; }
+        .tab { flex: 1; text-align: center; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 0.85em; font-weight: 700; color: var(--text-secondary); transition: background-color 0.2s, color 0.2s; }
+        .tab.active { background: var(--accent); color: var(--text-primary); }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+<div id="modal">
+    <div class="modal-box">
+        <div class="tabs" id="modalTabs">
+            <div id="tV" class="tab active" onclick="setMode('VENDRE')">VENDRE</div>
+            <div id="tR" class="tab" onclick="setMode('RESERVER')">RÉSERVER</div>
+        </div>
+        <h4 id="mTitle" style="text-align:center; color:var(--gold); margin-top:0; margin-bottom: 20px;">ARTICLE</h4>
+        
+        <label for="mClient">Nom du client</label>
+        <input type="text" id="mClient" placeholder="Ex: Jean Dupont">
+        
+        <label for="mContact">Contact client</label>
+        <input type="text" id="mContact" placeholder="Ex: 034 00 000 00">
+        
+        <label for="mFulfillment">Mode de récupération</label>
+        <select id="mFulfillment" onchange="toggleDeliveryFields()">
+            <option value="LIVRAISON">Livraison</option>
+            <option value="RETRAIT_BOUTIQUE">Retrait en boutique</option>
+        </select>
+        
+        <div id="livreur-section">
+            <label for="mLivreur">Assigner un livreur</label>
+            <select id="mLivreur">
+                <option value="">-- Optionnel --</option>
+            </select>
+        </div>
+
+        <div id="adresse-section">
+            <label for="mAdresse">Adresse de livraison</label>
+            <textarea id="mAdresse" placeholder="Quartier, repère, ville..."></textarea>
+        </div>
+
+        <label for="mQty">Quantité</label>
+        <input type="number" id="mQty" value="1" min="1">
+        
+        <button class="btn-op" id="btnConfirm" onclick="valider()">CONFIRMER L'OPÉRATION</button>
+        <button onclick="closeModal()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:15px; font-weight: bold; cursor: pointer;">FERMER</button>
+    </div>
+</div>
+
+<div class="mobile-view">
+    <div class="header">
+        <a href="dashboard.html" class="btn-back">‹</a>
+        <h2>Vendre / Réserver</h2>
+    </div>
+    
+    <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchArt" placeholder="Chercher un article pour opérer..." oninput="render()">
+    </div>
+
+    <div class="content-wrapper">
+        <div id="searchArea"></div>
+
+        <div class="view-tabs">
+            <div class="view-tab active" id="tab-reservations" onclick="setView('reservations')">Réservations <span id="countRes"></span></div>
+            <div class="view-tab" id="tab-ventes" onclick="setView('ventes')">Ventes <span id="countVentes"></span></div>
+        </div>
+
+        <div class="filter-box">
+            <input type="text" id="filterClient" placeholder="👤 Filtrer par nom de client..." oninput="render()">
+        </div>
+
+        <div id="listRes" class="grid-container"></div>
+        <div id="listVentes" class="grid-container" style="display: none;"></div>
+    </div>
+</div>
+
+<script>
+    let articles = [];
+    let transactions = [];
+    let livreurs = [];
+    let mode = 'VENDRE';
+    let selId = null; // ID Article
+    let selTransId = null; // ID Transaction (si modification)
+    let profile = null;
+    let accessChecked = false;
+    let currentView = 'reservations';
+
+    function setView(view) {
+        currentView = view;
+        document.getElementById('tab-reservations').classList.toggle('active', view === 'reservations');
+        document.getElementById('tab-ventes').classList.toggle('active', view === 'ventes');
+        document.getElementById('listRes').style.display = view === 'reservations' ? 'grid' : 'none';
+        document.getElementById('listVentes').style.display = view === 'ventes' ? 'grid' : 'none';
+    }
+
+    function getProfile() {
+        if (!profile) profile = JSON.parse(localStorage.getItem('bestin_profile') || '{}');
+        return profile || {};
+    }
+    function sanitizeText(value) { return String(value || '').toLowerCase(); }
+    
+    function getCachedSubscription() { return JSON.parse(localStorage.getItem('cache_abo') || 'null'); }
+    
+    function hasActiveSubscription(abo) {
+        if (!abo || abo.statut !== 'actif') return false;
+        if (!abo.date_fin) return true;
+        const end = new Date(abo.date_fin);
+        end.setHours(23, 59, 59, 999);
+        return Date.now() <= end.getTime();
+    }
+    
+    function hasActiveProfileSubscription(currentProfile) {
+        const dStr = currentProfile.subscription_until || currentProfile.expiration_date;
+        if (!dStr) return false;
+        const endDate = new Date(dStr);
+        if (Number.isNaN(endDate.getTime())) return false;
+        endDate.setHours(23, 59, 59, 999);
+        return Date.now() <= endDate.getTime();
+    }
+    
+    function isTrialActive(currentProfile) {
+        if (!currentProfile || !currentProfile.created_at) return false;
+        const start = new Date(currentProfile.created_at);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 10);
+        end.setHours(23, 59, 59, 999);
+        return Date.now() <= end.getTime();
+    }
+    
+    function ensureAccess() {
+        if (accessChecked) return true;
+        accessChecked = true;
+        const cp = getProfile();
+        const abo = getCachedSubscription();
+        const allowed = hasActiveProfileSubscription(cp) || hasActiveSubscription(abo) || isTrialActive(cp);
+        if (!allowed) {
+            const goAbo = confirm("Accès verrouillé : abonnement expiré. Voulez-vous renouveler ?");
+            if(goAbo) window.location.href = 'abonnement.html';
+            return false;
+        }
+        return true;
+    }
+
+    async function load() {
+        const cp = getProfile();
+        if (!cp.id) { window.location.href = 'login.html'; return; }
+        try {
+            const [allArticles, allVentes] = await Promise.all([
+                localDB.getAll('articles'),
+                localDB.getAll('ventes')
+            ]);
+
+            if (navigator.onLine) {
+                const { data } = await _sb.from('profiles')
+                    .select('id, full_name')
+                    .eq('parent_owner_id', cp.id)
+                    .eq('account_role', 'CHILD_LIVREUR')
+                    .eq('account_status', 'ACTIVE');
+                livreurs = data || [];
+            }
+
+            articles = (allArticles || [])
+                .filter(a => a.archived === false && a.vendeur_id === cp.vendeur_id)
+                .sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+            
+            transactions = (allVentes || [])
+                .filter(t => t.vendeur_id === cp.vendeur_id)
+                .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+            
+            render();
+        } catch (e) { console.error(e); }
+    }
+
+    function render() {
+        const qArt = sanitizeText(document.getElementById('searchArt').value);
+        const qClient = sanitizeText(document.getElementById('filterClient').value);
+        const searchArea = document.getElementById('searchArea');
+
+        if (qArt) {
+            const res = articles.filter(a => sanitizeText(a.nom).includes(qArt));
+            searchArea.innerHTML = res.map(a => {
+                const init = parseInt(a.stock_initial || 0, 10);
+                const vendu = parseInt(a.total_vendu || 0, 10);
+                const resv = parseInt(a.stock_reserve || 0, 10);
+                const phys = init - vendu - resv;
+                return `
+                <div class="item-card" style="margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b style="color: var(--text-primary);">${a.nom}</b>
+                        <span style="color:var(--gold); font-weight:bold; font-size:0.9em;">DISPO: ${phys}</span>
+                    </div>
+                    <button class="btn-op" onclick="openM('${a.id}')" style="margin-top: 12px; background:var(--accent); color:#fff;">+ NOUVELLE OPÉRATION</button>
+                </div>`;
+            }).join('');
+        } else { searchArea.innerHTML = ''; }
+
+        const listRes = transactions.filter(t => (t.statut === 'RESERVER' || t.statut === 'RESERVATION') && sanitizeText(t.client_nom).includes(qClient));
+        document.getElementById('countRes').innerText = `(${listRes.length})`;
+        document.getElementById('listRes').innerHTML = listRes.map(t => `
+            <div class="item-card">
+                <div class="item-card-header">
+                    <div class="item-card-info">
+                        <div class="client-name">${t.client_nom}</div>
+                        <div class="client-contact">${t.client_contact || 'N/A'}</div>
+                    </div>
+                </div>
+                <div class="item-card-body">
+                    <div class="article-name">${t.article_nom}</div>
+                    <div class="article-details">Quantité: <b style="color:var(--gold);">${t.quantite}</b> • ${t.fulfillment_method === 'RETRAIT_BOUTIQUE' ? 'Retrait' : 'Livraison'}</div>
+                </div>
+                <div class="item-card-actions">
+                    <button class="btn-op btn-cancel" onclick="actionRes('${t.id}', 'ANNULER')">ANNULER</button>
+                    <button class="btn-op btn-confirm" onclick="actionRes('${t.id}', 'CONFIRMER')">VENDRE</button>
+                    <button class="btn-op btn-edit" style="grid-column: span 2;" onclick="editVente('${t.id}')">MODIFIER LA RÉSERVATION</button>
+                </div>
+            </div>
+        `).join('') || '<div style="opacity:0.5; text-align:center; padding:20px;">Aucune réservation</div>';
+
+        const listVentes = transactions.filter(t => (t.statut === 'VENDRE' || t.statut === 'VENTE') && sanitizeText(t.client_nom).includes(qClient));
+        document.getElementById('countVentes').innerText = `(${listVentes.length})`;
+        document.getElementById('listVentes').innerHTML = listVentes.map(t => `
+            <div class="item-card">
+                <div class="item-card-header">
+                    <div class="item-card-info">
+                        <div class="client-name">${t.client_nom}</div>
+                        <div class="client-contact">${t.client_contact || 'N/A'}</div>
+                    </div>
+                </div>
+                <div class="item-card-body">
+                    <div class="article-name">${t.article_nom}</div>
+                    <div class="article-details">Vendu: <b style="color:var(--success);">${t.quantite}</b> • ${t.fulfillment_method === 'RETRAIT_BOUTIQUE' ? 'Retrait' : 'Livraison'}</div>
+                </div>
+                <div class="item-card-actions">
+                    <button class="btn-op btn-cancel" onclick="actionVente('${t.id}')">ANNULER</button>
+                    <button class="btn-op btn-edit" onclick="editVente('${t.id}')">MODIFIER</button>
+                </div>
+            </div>
+        `).join('') || '<div style="opacity:0.5; text-align:center; padding:20px;">Aucune vente</div>';
+    }
+
+    function populateLivreurs() {
+        const selectLivreur = document.getElementById('mLivreur');
+        selectLivreur.innerHTML = '<option value="">-- Optionnel --</option>';
+        livreurs.forEach(l => { selectLivreur.add(new Option(l.full_name, l.id)); });
+    }
+
+    function openM(artId) {
+        selId = artId;
+        selTransId = null;
+        const art = articles.find(a => a.id === artId);
+        document.getElementById('mTitle').innerText = art.nom;
+        document.getElementById('modalTabs').style.display = 'flex';
+        resetModal();
+        document.getElementById('modal').style.display = 'flex';
+        toggleDeliveryFields();
+    }
+
+    function editVente(transId) {
+        const t = transactions.find(x => x.id === transId);
+        if(!t) return;
+        selId = t.article_id;
+        selTransId = transId;
+        
+        document.getElementById('mTitle').innerText = "MODIFIER : " + t.article_nom;
+        document.getElementById('modalTabs').style.display = 'none'; 
+        
+        populateLivreurs();
+
+        document.getElementById('mClient').value = t.client_nom;
+        document.getElementById('mContact').value = t.client_contact || '';
+        document.getElementById('mFulfillment').value = t.fulfillment_method || 'LIVRAISON';
+        document.getElementById('mQty').value = t.quantite;
+        document.getElementById('mAdresse').value = t.client_adresse || '';
+        document.getElementById('mLivreur').value = t.livreur_id || '';
+        
+        mode = t.statut === 'RESERVER' || t.statut === 'RESERVATION' ? 'RESERVER' : 'VENDRE';
+        document.getElementById('btnConfirm').innerText = "ENREGISTRER LES MODIFICATIONS";
+        
+        document.getElementById('modal').style.display = 'flex';
+        toggleDeliveryFields();
+    }
+
+    function resetModal() {
+        document.getElementById('mClient').value = '';
+        document.getElementById('mContact').value = '';
+        document.getElementById('mFulfillment').value = 'LIVRAISON';
+        document.getElementById('mQty').value = 1;
+        document.getElementById('mAdresse').value = '';
+        
+        populateLivreurs();
+        document.getElementById('mLivreur').value = '';
+        setMode('VENDRE');
+    }
+
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    async function valider() {
+        const qty = parseInt(document.getElementById('mQty').value, 10) || 0;
+        const client = document.getElementById('mClient').value.toUpperCase();
+        const contact = document.getElementById('mContact').value.trim();
+        const fulfillment = document.getElementById('mFulfillment').value;
+        const livreurId = document.getElementById('mLivreur').value || null;
+        const adresse = document.getElementById('mAdresse').value.trim();
+        const art = articles.find(a => a.id === selId);
+
+        if(!art || qty <= 0 || !contact) { alert("Champs invalides."); return; }
+        if(fulfillment === 'LIVRAISON' && !adresse) { alert("Adresse requise."); return; }
+
+        let oldQty = 0;
+        if(selTransId) {
+            const oldT = transactions.find(x => x.id === selTransId);
+            oldQty = oldT.quantite;
+        }
+
+        const init = parseInt(art.stock_initial || 0, 10);
+        const vendu = parseInt(art.total_vendu || 0, 10);
+        const resv = parseInt(art.stock_reserve || 0, 10);
+        const currentPhys = init - vendu - resv;
+        const available = currentPhys + oldQty; 
+
+        if(qty > available) { alert("Stock insuffisant (" + available + " dispo)"); return; }
+
+        try {
+            if(mode === 'VENDRE') {
+                art.total_vendu = (art.total_vendu || 0) - oldQty + qty;
+            } else {
+                art.stock_reserve = (art.stock_reserve || 0) - oldQty + qty;
+            }
+            await localDB.save('articles', art);
+            await localDB.addToSyncQueue('articles', 'UPDATE', art);
+
+            const cp = getProfile();
+            const transData = selTransId ? transactions.find(x => x.id === selTransId) : {
+                id: crypto.randomUUID(),
+                created_at: new Date().toISOString(),
+                user_id: cp.id,
+                vendeur_id: cp.vendeur_id,
+                article_id: art.id,
+                article_nom: art.nom,
+                statut: mode,
+                reference_facture: mode === 'VENDRE' ? "FAC-" + Date.now() : null
+            };
+
+            Object.assign(transData, {
+                client_nom: client,
+                client_contact: contact,
+                fulfillment_method: fulfillment,
+                quantite: qty,
+                client_adresse: fulfillment === 'LIVRAISON' ? adresse : null,
+                livreur_id: fulfillment === 'LIVRAISON' ? livreurId : null,
+                prix_unitaire: parseFloat(art.prix || 0),
+                total_paye: parseFloat(art.prix || 0) * qty,
+                livraison_statut: transData.livraison_statut || (mode === 'VENDRE' ? (fulfillment === 'LIVRAISON' ? 'A_PREPARER' : 'EN_ATTENTE_RETRAIT') : null),
+                updated_at: new Date().toISOString()
+            });
+            transData.livraison_updated_at = transData.updated_at;
+
+            await localDB.save('ventes', transData);
+            await localDB.addToSyncQueue('ventes', selTransId ? 'UPDATE' : 'INSERT', transData);
+
+            if (selTransId) {
+                await localDB.addToSyncQueue('livraisons', 'UPDATE_BY_VENTE', { 
+                    vente_id: transData.id, 
+                    statut: transData.livraison_statut, 
+                    livreur_id: transData.livreur_id,
+                    updated_at: transData.updated_at 
+                });
+                logActivity('VENTE', `Modification de vente pour ${client}`);
+            } else {
+                logActivity('VENTE', `Nouvelle opération (${mode}) de ${qty}x ${art.nom} pour ${client}`);
+            }
+            
+            closeModal();
+            load();
+        } catch (e) { console.error(e); }
+    }
+
+    // CORRECTION BUG 1 & 4 : Annulation met aussi à jour la livraison et l'historique
+    async function actionRes(transId, type) {
+        const t = transactions.find(x => x.id === transId);
+        const art = t ? articles.find(a => a.id === t.article_id) : null;
+        if(!t || !art) return;
+
+        if(type === 'CONFIRMER') {
+            art.stock_reserve = (art.stock_reserve || 0) - t.quantite;
+            art.total_vendu = (art.total_vendu || 0) + t.quantite;
+            t.statut = 'VENDRE';
+            t.reference_facture = "FAC-" + Date.now();
+            t.livraison_statut = t.fulfillment_method === 'LIVRAISON' ? 'A_PREPARER' : 'EN_ATTENTE_RETRAIT';
+            logActivity('VENTE', `Réservation confirmée en vente pour ${t.client_nom}`);
+        } else {
+            art.stock_reserve = (art.stock_reserve || 0) - t.quantite;
+            t.statut = 'ANNULEE';
+            t.livraison_statut = 'ANNULEE'; 
+            logActivity('VENTE', `Réservation annulée pour ${t.client_nom}`);
+        }
+        
+        t.updated_at = new Date().toISOString();
+        t.livraison_updated_at = t.updated_at;
+        
+        await localDB.save('articles', art);
+        await localDB.save('ventes', t);
+        await localDB.addToSyncQueue('articles', 'UPDATE', art);
+        await localDB.addToSyncQueue('ventes', 'UPDATE', t);
+        
+        await localDB.addToSyncQueue('livraisons', 'UPDATE_BY_VENTE', { vente_id: t.id, statut: t.livraison_statut, updated_at: t.updated_at });
+        load();
+    }
+
+    async function actionVente(transId) {
+        if(!confirm("Annuler et remettre en stock ?")) return;
+        const t = transactions.find(x => x.id === transId);
+        const art = t ? articles.find(a => a.id === t.article_id) : null;
+        if(!t || !art) return;
+
+        art.total_vendu = (art.total_vendu || 0) - t.quantite;
+        t.statut = 'ANNULEE';
+        t.livraison_statut = 'ANNULEE'; 
+        t.updated_at = new Date().toISOString();
+        t.livraison_updated_at = t.updated_at;
+
+        await localDB.save('articles', art);
+        await localDB.save('ventes', t);
+        await localDB.addToSyncQueue('articles', 'UPDATE', art);
+        await localDB.addToSyncQueue('ventes', 'UPDATE', t);
+        
+        await localDB.addToSyncQueue('livraisons', 'UPDATE_BY_VENTE', { vente_id: t.id, statut: 'ANNULEE', updated_at: t.updated_at });
+        logActivity('VENTE', `Vente annulée pour ${t.client_nom}`);
+        load();
+    }
+
+    function toggleDeliveryFields() {
+        const f = document.getElementById('mFulfillment').value;
+        document.getElementById('adresse-section').style.display = f === 'LIVRAISON' ? 'block' : 'none';
+        document.getElementById('livreur-section').style.display = f === 'LIVRAISON' ? 'block' : 'none';
+    }
+
+    function setMode(m) {
+        mode = m;
+        document.getElementById('tV').className = m === 'VENDRE' ? 'tab active' : 'tab';
+        document.getElementById('tR').className = m === 'RESERVER' ? 'tab active' : 'tab';
+        document.getElementById('btnConfirm').innerText = m === 'VENDRE' ? 'CONFIRMER LA VENTE' : 'CONFIRMER LA RÉSERVATION';
+        document.getElementById('btnConfirm').style.background = m === 'VENDRE' ? 'var(--success)' : 'var(--accent)';
+    }
+
+    const itv = setInterval(() => {
+        if(typeof localDB !== 'undefined' && db) {
+            clearInterval(itv);
+            if(ensureAccess()) load();
+        }
+    }, 200);
+</script>
+</body>
+</html>

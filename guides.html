@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - Guides</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <style>
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --accent: #38bdf8; 
+            --gold: #facc15; 
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin:0; 
+            background:var(--bg); 
+            color:var(--text-primary); 
+            font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            display:flex; 
+            justify-content:center; 
+        }
+
+        .container { 
+            width:100%; 
+            max-width:430px; 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing:border-box; 
+        }
+
+        .header { 
+            display:flex; 
+            align-items:center; 
+            padding: 16px;
+            flex-shrink: 0;
+        }
+        .back-btn { 
+            color:var(--text-primary); 
+            text-decoration:none; 
+            font-size:1.8rem; 
+            margin-right:15px; 
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+
+        .search-container {
+            padding: 0 16px 16px 16px;
+            flex-shrink: 0;
+        }
+        .search { 
+            width:100%; 
+            background:var(--card); 
+            border:1px solid #334155; 
+            border-radius:14px; 
+            color:var(--text-primary); 
+            padding:14px; 
+            box-sizing:border-box; 
+            font-size: 1em;
+        }
+
+        .content-scroll {
+            overflow-y: auto;
+            padding: 0 16px 16px 16px;
+            flex-grow: 1;
+        }
+
+        .status { 
+            text-align:center; 
+            font-size:.85em; 
+            color: var(--text-secondary);
+            margin:14px 0; 
+            line-height: 1.5;
+        }
+
+        .card { 
+            background:var(--card); 
+            border:1px solid rgba(255,255,255,.08); 
+            border-radius:18px; 
+            padding:16px; 
+            margin-bottom:12px; 
+        }
+        .card h3 { 
+            margin:0 0 8px; 
+            color:var(--gold); 
+            font-size:1.1rem; 
+            font-weight: 700;
+        }
+        .card p { 
+            margin:0; 
+            line-height:1.5; 
+            color: var(--text-primary);
+            font-size:.95rem; 
+        }
+        .card .section-tag {
+            margin-top: 12px;
+            font-size: .8em;
+            color: var(--text-secondary);
+        }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <a href="parametres.html" class="back-btn">‹</a>
+        <h2>Guides</h2>
+    </div>
+    
+    <div class="search-container">
+        <input id="search" class="search" placeholder="Rechercher un guide...">
+    </div>
+
+    <div class="content-scroll">
+        <div id="status" class="status">Chargement...</div>
+        <div id="list"></div>
+    </div>
+</div>
+
+<script>
+const LOCAL_GUIDES = [
+  { ordre:1, titre:"Bienvenue", section:"Démarrage", description:"Bienvenue sur BEST'IN. L'application vous aide à gérer vos articles, ventes, livraisons et suivi quotidien simplement." },
+  { ordre:2, titre:"Premiers pas", section:"Démarrage", description:"Commencez par compléter les informations de votre boutique, puis ajoutez vos premiers articles." },
+  { ordre:3, titre:"Ajouter un article", section:"Articles", description:"Prenez un nom clair, un prix juste et un stock de départ réaliste. Cela vous aide à suivre facilement vos mouvements." },
+  { ordre:4, titre:"Vendre et réserver", section:"Ventes", description:"Vendre correspond à une sortie confirmée. Réserver sert à bloquer un stock temporairement pour un client." },
+  { ordre:5, titre:"Suivi livraison", section:"Livraison", description:"Mettez à jour le statut à chaque étape pour garder une traçabilité propre et rassurer le client." },
+  { ordre:6, titre:"Équipe livreurs", section:"Livreurs", description:"Vous pouvez créer des comptes livreurs dédiés pour organiser les tournées et garder un suivi clair." },
+  { ordre:7, titre:"Facturation", section:"Factures", description:"Utilisez les filtres pour retrouver une facture rapidement et vérifiez toujours les infos client avant impression." },
+  { ordre:8, titre:"Recettes", section:"Pilotage", description:"Consultez vos résultats pour comprendre ce qui se vend le mieux et mieux préparer vos approvisionnements." },
+  { ordre:9, titre:"Fonctionnement sans internet", section:"Hors-ligne", description:"Vous pouvez continuer à travailler sans connexion. Les opérations seront synchronisées automatiquement dès le retour internet." },
+  { ordre:10, titre:"Abonnement", section:"Compte", description:"Pensez à renouveler votre abonnement avant expiration pour garder un accès continu à toutes les fonctionnalités." },
+  { ordre:11, titre:"Récompenses", section:"Compte", description:"Vous pouvez saisir un code de récompense lorsque vous en recevez un, puis profiter des jours offerts." },
+  { ordre:12, titre:"Sécurité", section:"Protection", description:"Conservez vos identifiants en lieu sûr et changez votre mot de passe en cas de doute." },
+  { ordre:13, titre:"Conseil pratique", section:"Organisation", description:"Chaque fin de journée, vérifiez vos réservations, livraisons en cours, niveau de stock et notifications." }
+];
+
+let guides = [...LOCAL_GUIDES];
+
+function normalizeGuide(g) {
+    return {
+        ordre: g.ordre ?? g.Ordre ?? g.display_order ?? 0,
+        titre: g.titre ?? g.Titre ?? g.title ?? 'Guide',
+        section: g.section ?? g.Section ?? g.category ?? 'Info',
+        description: g.description ?? g.Description ?? g.content ?? 'Aucune description.'
+    };
+}
+
+function render(data) {
+    const list = document.getElementById('list');
+
+    if (!data.length) {
+        list.innerHTML = '<div class="card"><p>Aucun guide trouvé.</p></div>';
+        return;
+    }
+
+    list.innerHTML = data
+      .sort((a,b)=>(a.ordre||0)-(b.ordre||0))
+      .map(g => `<div class="card"><h3>${g.titre}</h3><p>${g.description}</p><p class="section-tag">Rubrique: ${g.section}</p></div>`)
+      .join('');
+}
+
+function setStatus(msg) {
+    document.getElementById('status').innerText = msg;
+}
+
+async function fetchCloudGuides() {
+    if (!navigator.onLine) {
+        setStatus('Mode hors-ligne • guides locaux disponibles');
+        return;
+    }
+
+    try {
+        const { data, error } = await _sb.from('guides').select('*').order('ordre', { ascending: true });
+        if (error) throw error;
+
+        if (Array.isArray(data) && data.length) {
+            guides = data.map(normalizeGuide);
+            localStorage.setItem('bestin_guides_cache', JSON.stringify(guides));
+            setStatus('');
+            render(guides);
+        } else {
+            setStatus('Guides locaux utilisés');
+        }
+    } catch (e) {
+        setStatus('Guides locaux utilisés');
+    }
+}
+
+function applySearch() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const filtered = guides
+        .map(normalizeGuide)
+        .filter(g => (`${g.titre} ${g.section} ${g.description}`).toLowerCase().includes(q));
+
+    render(filtered);
+
+    if (!q) {
+        setStatus(navigator.onLine ? '' : 'Mode hors-ligne • guides locaux disponibles');
+    } else {
+        setStatus(filtered.length > 0 ? '' : 'Aucun résultat');
+    }
+}
+
+(function init(){
+    try {
+        const cached = JSON.parse(localStorage.getItem('bestin_guides_cache') || '[]');
+        if (Array.isArray(cached) && cached.length) {
+            guides = cached.map(normalizeGuide);
+            setStatus('Guides en cache chargés');
+        } else {
+            setStatus('Guides locaux chargés');
+        }
+    } catch (_) {
+        setStatus('Guides locaux chargés');
+    }
+
+    render(guides.map(normalizeGuide));
+    fetchCloudGuides();
+
+    document.getElementById('search').addEventListener('input', applySearch);
+
+    window.addEventListener('online', () => {
+        fetchCloudGuides();
+        applySearch();
+    });
+
+    window.addEventListener('offline', () => {
+        setStatus('Mode hors-ligne • guides locaux disponibles');
+        applySearch();
+    });
+})();
+</script>
+</body>
+</html>

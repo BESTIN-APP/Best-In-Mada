@@ -1,0 +1,438 @@
+/* =========================================================
+   BEST'IN - THE BEST INNOVATION
+   EXPERT UI/UX STYLESHEET (FIX GLOBAL & DUAL THEME)
+   ========================================================= */
+
+/* --- VARIABLES & THÈMES --- */
+:root, :root[data-theme="dark"] {
+    --bg: #050a18;
+    --card: #16213e;
+    --accent: #2d62ff;
+    --gold: #D4AF37;
+    --success: #22c55e;
+    --danger: #f43f5e;
+    --warn: #f97316;
+    --orange: #f97316;
+    --text-primary: #ffffff;
+    --text-secondary: #8a99af;
+    
+    --input-bg: #0b1426;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --tab-bg: rgba(0, 0, 0, 0.3);
+    --shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+:root[data-theme="light"] {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --accent: #2d62ff;
+    --gold: #b48500;
+    --success: #22c55e;
+    --danger: #e11d48;
+    --warn: #ea580c;
+    --orange: #ea580c;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+
+    --input-bg: #f1f5f9;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --tab-bg: #e2e8f0;
+    --shadow: 0 8px 20px rgba(0,0,0,0.05);
+}
+
+/* =========================================================
+   1. STRUCTURE MOBILE & SCROLL (Directives 2, 4, 5)
+   ========================================================= */
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100% !important;
+    background-color: #000 !important; /* Bordure extérieure sur écran PC */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    overflow: hidden !important;
+}
+
+/* Simulateur d'écran mobile */
+.mobile-container, .mobile-view, .container, .c, .mobile, .login-box {
+    width: 100% !important;
+    max-width: 430px !important;
+    margin: 0 auto !important;
+    background-color: var(--bg) !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    color: var(--text-primary) !important;
+    transition: background-color 0.3s ease, color 0.3s ease !important;
+}
+
+/* Espace de contenu dynamique avec Espace Anti-Coupure */
+.content-scroll, .content-wrapper, .products-list-container, 
+.table-container, .scroll-content, .notif-list-container, .cat-list {
+    flex-grow: 1 !important;
+    overflow-y: auto !important;
+    padding: 16px 16px 120px 16px !important; /* 120px pour protéger des boutons flottants */
+    scroll-behavior: smooth !important;
+}
+
+/* Masquer la barre de défilement */
+.content-scroll::-webkit-scrollbar, .content-wrapper::-webkit-scrollbar, 
+.table-container::-webkit-scrollbar, .cat-list::-webkit-scrollbar {
+    display: none !important;
+}
+
+/* =========================================================
+   2. HIERARCHIE, EN-TÊTE ET BOUTON RETOUR (Directive 1)
+   ========================================================= */
+.header, .fixed-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+    flex-shrink: 0 !important;
+    background: var(--bg) !important;
+    padding: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 70px !important;
+    box-sizing: border-box !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    margin: 0 !important;
+    transition: background-color 0.3s ease !important;
+}
+
+/* Fix spécifique pour parametres.html */
+.mobile > .header {
+    position: sticky !important;
+    top: -16px !important;
+    margin: -16px -16px 16px -16px !important;
+    width: calc(100% + 32px) !important;
+}
+
+/* Exception : En-tête du Dashboard */
+.mobile-container > .header:has(.logo-area) {
+    justify-content: space-between !important;
+    border-bottom: none !important;
+    padding: 16px 16px 0 16px !important;
+}
+
+/* Titres de pages centrés et sécurisés */
+.header h1, .header h2, .fixed-header h2, .header .title {
+    flex: 1 !important;
+    text-align: center !important;
+    margin: 0 !important;
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    text-transform: UPPERCASE !important;
+    color: var(--text-primary) !important;
+    padding: 0 45px !important; /* Empêche le titre de passer sous les boutons latéraux */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Exception : Titre du Dashboard */
+.mobile-container > .header:has(.logo-area) h1, 
+.mobile-container > .header:has(.logo-area) h2 {
+    text-align: left !important;
+    padding: 0 !important;
+    white-space: normal !important;
+}
+
+/* Bouton Retour (Cercle parfait) */
+.back-btn, .btn-back, .back {
+    position: absolute !important;
+    left: 16px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    background: var(--card) !important;
+    color: var(--text-primary) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    font-size: 1.4rem !important;
+    border: 1px solid var(--border-color) !important;
+    z-index: 110 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
+    transition: var(--bg) 0.3s ease !important;
+}
+
+.back-btn:active, .btn-back:active, .back:active {
+    background: var(--accent) !important;
+    color: #fff !important;
+}
+
+/* =========================================================
+   3. RECHERCHE ET ZONES FIXES
+   ========================================================= */
+.search-container, .filters-container, .controls-container, .filter-box {
+    padding: 12px 16px !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    z-index: 90 !important;
+    background: var(--bg) !important;
+    margin: 0 !important;
+    transition: background-color 0.3s ease !important;
+}
+
+/* =========================================================
+   4. BOUTONS : DIMENSIONS, COULEURS ET CONTRASTES (Directive 3)
+   ========================================================= */
+button, .btn, .btn-main, .btn-action, .btn-op, .btn-confirm, 
+.btn-cancel, .btn-update, .btn-reg, .btn-primary, .btn-edit {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    padding: 14px 16px !important;
+    border-radius: 14px !important;
+    text-transform: UPPERCASE !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 1px !important;
+    border: none !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    line-height: 1.2 !important;
+}
+
+button:disabled, .btn:disabled {
+    background: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+    cursor: not-allowed !important;
+}
+
+/* --- THEMES DE COULEURS BOUTONS --- */
+/* Primaire */
+button, .btn, .btn-main, .btn-action, .btn-update, .btn-reg, .btn-primary {
+    background: var(--accent) !important;
+    color: #ffffff !important;
+}
+/* Succès (Contraste strict: texte noir sur fond vert) */
+.btn-success, .btn-confirm, .success {
+    background: var(--success) !important;
+    color: #000000 !important;
+}
+/* Danger */
+.btn-danger, .btn-cancel, .btn-arch, .danger {
+    background: var(--danger) !important;
+    color: #ffffff !important;
+}
+/* Avertissement (Contraste strict: texte noir sur fond orange) */
+.btn-warn, .warn {
+    background: var(--warn) !important;
+    color: #000000 !important; 
+}
+/* Muted */
+.btn-muted, .muted, .btn.muted {
+    background: var(--card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+/* Edit */
+.btn-edit {
+    background: var(--card) !important;
+    color: var(--accent) !important;
+    border: 1px solid var(--accent) !important;
+}
+
+/* --- EXCEPTIONS --- */
+/* Bouton Imprimer (Factures) */
+.btn-print {
+    width: auto !important;
+    flex-shrink: 0 !important;
+    padding: 10px 16px !important;
+    font-size: 0.8rem !important;
+    background: var(--accent) !important;
+    color: #fff !important;
+    border-radius: 10px !important;
+    border: none !important;
+    font-weight: 700 !important;
+    text-transform: UPPERCASE !important;
+}
+
+/* Bouton Désactiver (Livreurs) */
+.btn-del {
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(244, 63, 94, 0.15) !important;
+    color: var(--danger) !important;
+    border: 1px solid rgba(244, 63, 94, 0.3) !important;
+    border-radius: 10px !important;
+    font-weight: 900 !important;
+    font-size: 1.2rem !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
+}
+
+/* Bouton Flottant (Ajouter Article) */
+.add-btn {
+    position: absolute !important;
+    bottom: 25px !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+    z-index: 1000 !important;
+    background: var(--accent) !important;
+    color: #fff !important;
+    box-shadow: 0 10px 30px rgba(45, 98, 255, 0.4) !important;
+    text-align: center !important;
+    text-decoration: none !important;
+    padding: 16px !important;
+    border-radius: 16px !important;
+    font-weight: 700 !important;
+    text-transform: UPPERCASE !important;
+    display: block !important;
+}
+
+/* =========================================================
+   5. CARTES ET BADGES
+   ========================================================= */
+.card, .status-card, .module-card, .cat-card, .item-card, 
+.product-card, .support-card, .notif-card, .activity-item, .stat-card, .invoice-card {
+    background: var(--card) !important;
+    border-radius: 20px !important;
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow) !important;
+    position: relative !important;
+    transition: background-color 0.3s ease !important;
+}
+
+/* Fix d'alignement pour les factures */
+.invoice-card {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 15px !important;
+}
+.inv-info {
+    flex: 1 !important;
+    min-width: 0 !important; 
+}
+
+/* Grilles d'actions (Ventes/Livraison) */
+.actions, .item-card-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    margin-top: 16px !important;
+    padding-top: 16px !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+/* Badges */
+.badge, .status-pill, .sync-chip, .cat-count {
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    text-transform: UPPERCASE !important;
+    letter-spacing: 0.5px !important;
+}
+
+.b-prep { background: rgba(45, 98, 255, 0.1) !important; color: var(--accent) !important; border: 1px solid rgba(45, 98, 255, 0.2) !important; }
+.b-run { background: rgba(249, 115, 22, 0.1) !important; color: var(--warn) !important; border: 1px solid rgba(249,115,22,0.2) !important; }
+.b-done { background: rgba(34, 197, 94, 0.1) !important; color: var(--success) !important; border: 1px solid rgba(34,197,94,0.2) !important; }
+.b-ret { background: rgba(244, 63, 94, 0.1) !important; color: var(--danger) !important; border: 1px solid rgba(244,63,94,0.2) !important; }
+
+/* =========================================================
+   6. FORMULAIRES & ONGLETS
+   ========================================================= */
+input, select, textarea {
+    width: 100% !important;
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--border-color) !important;
+    background: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    font-size: 0.95rem !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    margin-bottom: 12px !important;
+    transition: border-color 0.3s ease !important;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--accent) !important;
+}
+
+select {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.view-tabs, .tabs {
+    display: flex !important;
+    background: var(--tab-bg) !important;
+    border-radius: 16px !important;
+    padding: 6px !important;
+    margin-bottom: 16px !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.view-tab, .tab {
+    flex: 1 !important;
+    text-align: center !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    text-transform: UPPERCASE !important;
+    color: var(--text-secondary) !important;
+    cursor: pointer !important;
+}
+
+.view-tab.active, .tab.active {
+    background: var(--accent) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(45, 98, 255, 0.3) !important;
+}
+
+/* =========================================================
+   7. TEXTES & MODALS
+   ========================================================= */
+h3, .title, .section, .stat-label, label {
+    font-size: 0.8rem !important;
+    color: var(--text-secondary) !important;
+    text-transform: UPPERCASE !important;
+    letter-spacing: 1.2px !important;
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+    display: block !important;
+}
+
+.title, .section { color: var(--gold) !important; }
+
+p, .info-group, .mut, .details, .article-details, .status-line {
+    line-height: 1.6 !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.9rem !important;
+}
+
+b, strong { color: var(--text-primary) !important; }
+
+.modal, #modal, #editModal {
+    background: rgba(0, 0, 0, 0.7) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.modal-box, .modal-content {
+    background: var(--bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 24px !important;
+    padding: 24px !important;
+}

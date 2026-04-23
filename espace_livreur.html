@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - Espace Livreur</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <style>
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --accent: #38bdf8; 
+            --gold: #facc15; 
+            --success: #22c55e;
+            --danger: #f43f5e;
+            --warn: #f97316;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin:0; 
+            background:#000; 
+            color:var(--text-primary); 
+            font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+        }
+
+        .mobile-view { 
+            width:100%; 
+            max-width:430px; 
+            margin:auto; 
+            height:100vh; 
+            background:var(--bg); 
+            display: flex;
+            flex-direction: column;
+            box-sizing:border-box; 
+        }
+
+        .header { 
+            display:flex; 
+            align-items:center; 
+            justify-content: space-between;
+            padding: 16px;
+            flex-shrink: 0;
+            background: var(--card);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .header h2 { margin: 0; font-size: 1.1em; font-weight: 700; color: var(--accent); }
+        .btn-settings { color: var(--text-secondary); font-size: 1.5em; text-decoration: none; }
+
+        .sync-banner { 
+            background: rgba(56, 189, 248, 0.1); 
+            color: var(--accent); 
+            font-size: 0.75em; 
+            text-align: center; 
+            padding: 8px; 
+            font-weight: bold; 
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .filters-container { padding: 16px; flex-shrink: 0; }
+
+        .btn-force-sync {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            transition: transform 0.1s;
+        }
+        .btn-force-sync:active { transform: scale(0.98); }
+        .btn-force-sync:disabled { opacity: 0.5; background: #334155; cursor: not-allowed; }
+
+        .input, select { 
+            width:100%; 
+            padding:14px; 
+            background:var(--card); 
+            border-radius:14px; 
+            border:1px solid #334155; 
+            color:var(--text-primary); 
+            box-sizing:border-box; 
+            font-size: 1em;
+            outline: none;
+        }
+
+        .content-wrapper { overflow-y: auto; padding: 0 16px 16px 16px; flex-grow: 1; }
+
+        .card { 
+            background:var(--card); 
+            border-radius:18px; 
+            padding:16px; 
+            margin-bottom:16px; 
+            border:1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .badge { display:inline-block; padding: 5px 10px; border-radius: 8px; font-size:0.75em; font-weight:700; margin-bottom:12px; }
+        .b-prep { background:rgba(56, 189, 248, 0.1); color:var(--accent); }
+        .b-run { background:rgba(249, 115, 22, 0.1); color:var(--warn); }
+        .b-done { background:rgba(34, 197, 94, 0.1); color:var(--success); }
+        .b-ret { background:rgba(244, 63, 94, 0.1); color:var(--danger); }
+
+        .info-group { font-size: 0.9em; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; }
+        .info-group b { color: var(--text-primary); font-weight: 600; }
+        .info-group .article-name { font-size: 1.1em; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+        .price-tag { color: var(--gold); font-weight: 700; font-size: 1.1em; display: block; margin-top: 8px; }
+
+        .actions { 
+            display:grid; 
+            grid-template-columns:1fr 1fr; 
+            gap:10px; 
+            margin-top:16px; 
+            padding-top: 16px;
+            border-top: 1px solid #334155;
+        }
+        .btn { 
+            border:none; 
+            border-radius:12px; 
+            padding:12px; 
+            font-weight:700; 
+            color:#fff; 
+            cursor:pointer; 
+            font-size: 0.85em;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn.success { background:var(--success); }
+        .btn.warn { background:var(--warn); }
+        .btn.danger { background:var(--danger); }
+        .btn.muted { background:#334155; }
+
+        .proof { width:100%; border-radius:12px; margin-top:16px; max-height:180px; object-fit:cover; }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<div class="mobile-view">
+    <div class="header">
+        <h2 id="livreurName">Espace Livreur</h2>
+        <a href="parametres.html" class="btn-settings">⚙️</a>
+    </div>
+
+    <div id="syncBanner" class="sync-banner">Mise à jour en cours...</div>
+
+    <div class="filters-container">
+        <!-- BOUTON SYNCHRO POUR LE LIVREUR -->
+        <button id="btnForceSync" class="btn-force-sync" onclick="forceSync()">
+            <span>🔄</span> ACTUALISER LES LIVRAISONS
+        </button>
+
+        <input id="q" class="input" placeholder="🔍 Rechercher client ou article..." oninput="render()" style="margin-bottom: 10px;">
+        <select id="filtreStatut" onchange="render()">
+            <option value="">Tous les statuts</option>
+            <option value="A_PREPARER">À préparer</option>
+            <option value="EN_COURS_LIVRAISON">En cours de livraison</option>
+            <option value="LIVRE_PAYE">Payé/Livré</option>
+            <option value="RETOUR_CLIENT">Retour client</option>
+        </select>
+    </div>
+
+    <div class="content-wrapper">
+        <div id="listLivraisons"></div>
+    </div>
+</div>
+
+<script>
+let livraisons = [];
+
+// LOGIQUE BOUTON SYNCHRO
+function updateSyncButtonState() {
+    const btn = document.getElementById('btnForceSync');
+    if (!btn) return;
+    if (!navigator.onLine) {
+        btn.disabled = true;
+        btn.innerHTML = "<span>🌐</span> INTERNET REQUIS POUR ACTUALISER";
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = "<span>🔄</span> ACTUALISER LES LIVRAISONS";
+    }
+}
+
+async function forceSync() {
+    if (!navigator.onLine) {
+        alert("Veuillez activer votre connexion internet.");
+        return;
+    }
+
+    const btn = document.getElementById('btnForceSync');
+    btn.disabled = true;
+    btn.innerHTML = "<span>⏳</span> TÉLÉCHARGEMENT...";
+
+    try {
+        if (typeof syncData === 'function') await syncData();
+        if (typeof refreshLocalCache === 'function') await refreshLocalCache({ force: true });
+        
+        await load(); 
+        
+        btn.innerHTML = "<span>✅</span> À JOUR !";
+        setTimeout(() => { updateSyncButtonState(); }, 2000);
+    } catch (e) {
+        console.error(e);
+        alert("Erreur réseau. Veuillez réessayer.");
+        updateSyncButtonState();
+    }
+}
+
+function updateSyncBanner() {
+    const banner = document.getElementById('syncBanner');
+    const pending = JSON.parse(localStorage.getItem('bestin_pending_sync_count') || '0');
+    
+    if (!navigator.onLine) {
+        banner.innerText = "Mode Hors-Ligne - Les statuts seront mis à jour plus tard.";
+        banner.style.background = "rgba(249, 115, 22, 0.1)";
+        banner.style.color = "var(--warn)";
+        return;
+    }
+
+    if (pending > 0) {
+        banner.innerText = `${pending} livraison(s) en attente de synchronisation.`;
+        banner.style.background = "rgba(250, 204, 21, 0.1)";
+        banner.style.color = "var(--gold)";
+        return;
+    }
+
+    banner.innerText = "Toutes les livraisons sont à jour.";
+    banner.style.background = "rgba(34, 197, 94, 0.1)";
+    banner.style.color = "var(--success)";
+}
+
+function normalize(t) { return String(t || '').toLowerCase(); }
+
+function badgeClass(st) {
+    if (st === 'LIVRE_PAYE') return 'b-done';
+    if (st === 'EN_COURS_LIVRAISON') return 'b-run';
+    if (st === 'RETOUR_CLIENT') return 'b-ret';
+    return 'b-prep';
+}
+
+function labelStatut(st) {
+    return ({
+        A_PREPARER:'À LIVRER',
+        EN_COURS_LIVRAISON:'EN COURS',
+        LIVRE_PAYE:'PAYÉ / LIVRÉ',
+        RETOUR_CLIENT:'RETOUR'
+    })[st] || st || 'A_PREPARER';
+}
+
+async function load() {
+    const p = JSON.parse(localStorage.getItem('bestin_profile') || '{}');
+    if (!p.id || p.account_role !== 'CHILD_LIVREUR') { 
+        window.location.href = 'login.html'; 
+        return; 
+    }
+
+    document.getElementById('livreurName').innerText = "Livreur : " + (p.full_name || "BEST'IN");
+
+    const all = await localDB.getAll('livraisons');
+    
+    livraisons = (all || [])
+        .filter(v => v.fulfillment_method === 'LIVRAISON')
+        .sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        
+    render();
+    updateSyncBanner();
+    updateSyncButtonState();
+}
+
+function render() {
+    const q = normalize(document.getElementById('q').value);
+    const fs = document.getElementById('filtreStatut').value;
+    
+    const filtered = livraisons.filter(v => {
+        if (v.statut === 'ANNULEE' || v.livraison_statut === 'ANNULEE') return false;
+
+        const textMatch = normalize(v.client_nom).includes(q) || normalize(v.article_nom).includes(q) || normalize(v.client_adresse).includes(q);
+        const statutMatch = !fs || v.statut === fs;
+        return textMatch && statutMatch;
+    });
+
+    document.getElementById('listLivraisons').innerHTML = filtered.map(v => renderCard(v)).join('') || '<div style="text-align:center; padding:20px; opacity:0.5;">Aucune course assignée.</div>';
+}
+
+function renderCard(v) {
+    return `
+        <div class="card">
+            <span class="badge ${badgeClass(v.statut)}">${labelStatut(v.statut)}</span>
+            
+            <div class="info-group">
+                <div class="article-name">${v.article_nom || 'Article inconnu'} (x${v.quantite || 1})</div>
+                Client: <b>${v.client_nom || '-'}</b><br>
+                Contact: <b>${v.client_contact || '-'}</b><br>
+                Adresse: <b>${v.client_adresse || '-'}</b>
+                <span class="price-tag">À encaisser : ${(v.total_paye || 0).toLocaleString()} Ar</span>
+            </div>
+
+            <div class="actions">
+                <button class="btn warn" onclick="setStatut('${v.id}','EN_COURS_LIVRAISON')">EN COURS</button>
+                <button class="btn success" onclick="setStatut('${v.id}','LIVRE_PAYE')">LIVRÉ</button>
+                <button class="btn danger" onclick="setStatut('${v.id}','RETOUR_CLIENT')">RETOUR</button>
+                <button class="btn muted" onclick="window.location.href='tel:${v.client_contact}'">APPELER</button>
+                <button class="btn muted" onclick="openMaps('${encodeURIComponent(v.client_adresse)}')">MAPS</button>
+                <label class="btn muted" style="display:flex; align-items:center; justify-content:center;">
+                    PHOTO
+                    <input type="file" accept="image/*" style="display:none" onchange="saveProof('${v.id}', this)">
+                </label>
+            </div>
+            ${v.preuve_image ? `<img class="proof" src="${v.preuve_image}">` : ''}
+        </div>
+    `;
+}
+
+// CORRECTION BUG 4 : Historique pour le livreur
+async function setStatut(id, statut) {
+    const v = livraisons.find(x => x.id === id);
+    if (!v) return;
+    v.statut = statut;
+    v.updated_at = new Date().toISOString();
+    v.last_updated_at = v.updated_at;
+    
+    await localDB.save('livraisons', v);
+    await localDB.addToSyncQueue('livraisons', 'UPDATE', v);
+    logActivity('LIVRAISON', `Course mise à jour : ${labelStatut(statut)} pour ${v.client_nom}`);
+    render();
+}
+
+function openMaps(addr) {
+    if(!addr || addr === 'undefined' || addr === 'null') { alert("Pas d'adresse renseignée."); return; }
+    window.open(`https://www.google.com/maps/search/?api=1&query=${addr}`, '_blank');
+}
+
+async function saveProof(id, input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const v = livraisons.find(x => x.id === id);
+        v.preuve_image = e.target.result;
+        v.updated_at = new Date().toISOString();
+        v.last_updated_at = v.updated_at;
+        
+        await localDB.save('livraisons', v);
+        await localDB.addToSyncQueue('livraisons', 'UPDATE', v);
+        render();
+    };
+    reader.readAsDataURL(file);
+}
+
+const itv = setInterval(() => {
+    if(typeof localDB !== 'undefined' && db) {
+        clearInterval(itv);
+        load();
+    }
+}, 200);
+
+window.addEventListener('online', () => { updateSyncBanner(); updateSyncButtonState(); });
+window.addEventListener('offline', () => { updateSyncBanner(); updateSyncButtonState(); });
+window.addEventListener('bestin-sync-state', updateSyncBanner);
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - Conditions d'utilisation</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --gold: #facc15; 
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin:0; 
+            background:var(--bg); 
+            color:var(--text-primary); 
+            font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            display:flex; 
+            justify-content:center; 
+        }
+
+        .container { 
+            width:100%; 
+            max-width:430px; 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing:border-box; 
+        }
+
+        .header { 
+            display:flex; 
+            align-items:center; 
+            padding: 16px;
+            flex-shrink: 0;
+        }
+        .back-btn { 
+            color:var(--text-primary); 
+            text-decoration:none; 
+            font-size:1.8rem; 
+            margin-right:12px; 
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+
+        .content-scroll {
+            overflow-y: auto;
+            padding: 0 16px 16px 16px;
+            flex-grow: 1;
+        }
+
+        .card { 
+            background:var(--card); 
+            border:1px solid rgba(255,255,255,.08); 
+            border-radius:18px; 
+            padding:16px; 
+            margin-bottom:12px; 
+        }
+        .card h3 { 
+            margin:0 0 8px; 
+            color:var(--gold); 
+            font-size:1.1rem; 
+            font-weight: 700;
+        }
+        .card p { 
+            margin:0; 
+            font-size:.95rem; 
+            line-height:1.55; 
+            color: var(--text-primary);
+        }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <a href="parametres.html" class="back-btn">‹</a>
+        <h2>Conditions d'utilisation</h2>
+    </div>
+
+    <div class="content-scroll">
+        <div class="card"><h3>Notre objectif</h3><p>BEST'IN vous accompagne dans la gestion quotidienne de votre activité: stock, ventes, livraisons et suivi de performance.</p></div>
+        <div class="card"><h3>Votre compte</h3><p>Vous êtes responsable de la sécurité de vos identifiants. En cas de doute, changez le mot de passe immédiatement.</p></div>
+        <div class="card"><h3>Utilisation responsable</h3><p>Les informations saisies dans l'application doivent être exactes et tenues à jour pour garantir un suivi fiable.</p></div>
+        <div class="card"><h3>Disponibilité du service</h3><p>L'application est conçue pour fonctionner même sans internet. Certaines fonctions de synchronisation nécessitent néanmoins une connexion active.</p></div>
+        <div class="card"><h3>Abonnement</h3><p>L'accès complet dépend de votre abonnement actif. Pensez à renouveler avant expiration pour éviter les interruptions.</p></div>
+        <div class="card"><h3>Assistance</h3><p>En cas de problème, vous pouvez contacter le support depuis l'application. Nous faisons le maximum pour vous répondre rapidement.</p></div>
+    </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

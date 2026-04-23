@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - Dashboard</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <style>
+        :root { 
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --gold: #facc15;
+            --orange: #f97316; 
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin: 0; 
+            background-color: #000; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            color: var(--text-primary); 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+        }
+
+        .mobile-container { 
+            width: 100%; 
+            max-width: 430px; 
+            background-color: var(--bg); 
+            padding: 16px 16px 0 16px; 
+            box-sizing: border-box; 
+            display: flex; 
+            flex-direction: column; 
+            flex: 1; 
+            margin: 0 auto; 
+            overflow-y: hidden;
+        }
+
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 16px; 
+            padding: 8px 4px 0 4px;
+        }
+
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-circle { 
+            width: 42px; 
+            height: 42px; 
+            border-radius: 12px;
+            border: 1px solid rgba(250, 204, 21, 0.3); 
+            background: #fff; 
+            overflow: hidden; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+        }
+
+        .header-actions { display: flex; gap: 16px; align-items: center; }
+        .notif-btn { position: relative; font-size: 1.4em; cursor: pointer; color: var(--text-secondary); }
+        .notif-badge { 
+            position: absolute; 
+            top: 0px; right: 0px; 
+            background: var(--orange); 
+            width: 8px; height: 8px; 
+            border-radius: 50%; 
+            border: 2px solid var(--bg); 
+        }
+        .profile-icon { font-size: 1.5em; cursor: pointer; color: var(--text-secondary); }
+
+        .sync-action-bar { padding: 0 4px; margin-bottom: 20px; }
+        .btn-force-sync {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            background: var(--card);
+            border: 1px solid #334155;
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .btn-force-sync:active { transform: scale(0.98); }
+        .btn-force-sync:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* MODIFICATIONS WELCOME SECTION (MINIMALISTE) */
+        .welcome-section { 
+            margin-bottom: 24px; 
+            padding: 0 4px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .welcome-left {
+            flex: 1;
+            min-width: 0; 
+        }
+        .welcome-right {
+            flex-shrink: 0;
+            margin-left: 12px;
+        }
+
+        .welcome-section h1 { 
+            font-size: 1.4em; 
+            margin: 0; 
+            font-weight: 600; 
+            color: var(--text-primary);
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .workspace-subtitle {
+            margin: 2px 0 8px 0; 
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* NOUVEAU DESIGN DU STATUT (Point lumineux) */
+        .sync-chip-minimal {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        /* DESIGN DU BOUTON INSTALLER */
+        .btn-install-dash {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            padding: 8px 10px;
+            font-size: 0.65em;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 75px;
+            height: 58px;
+            box-shadow: 0 4px 10px rgba(56, 189, 248, 0.3);
+            transition: transform 0.2s, background 0.2s, opacity 0.2s;
+        }
+        .btn-install-dash:active { transform: scale(0.95); }
+        .btn-install-dash:disabled {
+            background: var(--card);
+            color: var(--text-secondary);
+            border: 1px solid #334155;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+        .btn-install-dash span { font-size: 1.6em; margin-bottom: 2px; }
+
+        .modules-grid-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            margin: 0 -16px;
+            padding: 0 16px 16px 16px;
+        }
+        
+        .modules-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px; 
+            flex-shrink: 0; 
+        }
+
+        .module-card { 
+            background: var(--card); 
+            border-radius: 18px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-start;
+            justify-content: space-between;
+            text-decoration: none; 
+            color: var(--text-secondary); 
+            border: 1px solid rgba(255,255,255,0.08); 
+            padding: 16px; 
+            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.2s;
+            min-height: 110px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .module-card:active { 
+            transform: scale(0.97); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        .module-card.full-width {
+            grid-column: span 2;
+            flex-direction: row;
+            align-items: center;
+            gap: 20px;
+            min-height: 80px;
+        }
+
+        .module-icon { 
+            font-size: 2em; 
+            line-height: 1;
+            margin-bottom: auto;
+        }
+        
+        .full-width .module-icon {
+            font-size: 1.8em;
+            margin-bottom: 0;
+        }
+
+        .module-name { 
+            font-size: 0.9em; 
+            font-weight: 600; 
+            text-align: left; 
+            line-height: 1.3; 
+            color: var(--text-primary);
+        }
+
+        .full-width .module-name {
+            font-size: 1em;
+        }
+
+        .footer-status { 
+            padding: 16px 0 4px 0; 
+            font-size: 0.75em; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+            margin-top: auto; 
+            flex-shrink: 0;
+            color: #64748b;
+        }
+        
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<div class="mobile-container">
+    <div class="header">
+        <div class="logo-area">
+            <div class="logo-circle"><img src="BESTIN.png" alt="Logo" style="width:100%; height:100%; object-fit:cover;"></div>
+            <div>
+                <div style="font-weight: 800; font-size: 0.9em; color: var(--text-primary);">BEST'IN</div>
+                <div style="font-size: 0.6em; color: var(--gold); letter-spacing: 0.5px;">THE BEST INNOVATION</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="notif-btn" onclick="location.href='notifications.html'">
+                🔔<span class="notif-badge" id="notif-dot" style="display:none"></span>
+            </div>
+            <div class="profile-icon" onclick="location.href='profil.html'">👤</div>
+        </div>
+    </div>
+
+    <!-- BOUTON SYNCHRO MANUELLE -->
+    <div class="sync-action-bar">
+        <button id="btnForceSync" class="btn-force-sync" onclick="forceSync()">
+            <span>🔄</span> SYNCHRONISER MES DONNÉES
+        </button>
+    </div>
+
+    <div class="welcome-section">
+        <div class="welcome-left">
+            <h1 id="user_name">Chargement...</h1>
+            <p class="workspace-subtitle">Espace de travail</p>
+            
+            <!-- NOUVEAU STATUT MINIMALISTE -->
+            <div class="sync-chip-minimal">
+                <div class="sync-dot" id="sync-dot" style="background: gray;"></div>
+                <span id="sync-text" style="color: var(--text-secondary);">Initialisation...</span>
+            </div>
+        </div>
+        
+        <div class="welcome-right">
+            <button id="btnInstallDashboard" class="btn-install-dash" onclick="handleDashboardInstall()" disabled>
+                <span>⏳</span>VERIF...
+            </button>
+        </div>
+    </div>
+
+    <div class="modules-grid-wrapper">
+        <div class="modules-grid">
+            <a href="ventes.html" class="module-card full-width" data-module="ventes"><span class="module-icon">🛒</span><span class="module-name">Flux de Ventes</span></a>
+            <a href="articles.html" class="module-card full-width" data-module="articles"><span class="module-icon">📦</span><span class="module-name">Catalogue Produits</span></a>
+            
+            <a href="stocks.html" class="module-card" data-module="stocks"><span class="module-icon">📊</span><span class="module-name">Gestion<br>de stocks</span></a>
+            <a href="livraison.html" class="module-card" data-module="livraison"><span class="module-icon">🚚</span><span class="module-name" data-i18n="dashboard_delivery">Suivi<br>livraison</span></a>
+            
+            <a href="espace_livreur.html" class="module-card" data-module="espace_livreur" style="display:none;">
+                <span class="module-icon">🛵</span>
+                <span class="module-name">Espace<br>Livreur</span>
+            </a>
+
+            <a href="recettes.html" class="module-card" data-module="recettes"><span class="module-icon">💰</span><span class="module-name">Mes<br>Recettes</span></a>
+            <a href="factures.html" class="module-card" data-module="factures"><span class="module-icon">📄</span><span class="module-name">Facturation</span></a>
+            <a href="historique.html" class="module-card" data-module="historique"><span class="module-icon">📜</span><span class="module-name">Historique<br>d'activités</span></a>
+            <a href="recompenses.html" class="module-card" data-module="recompenses"><span class="module-icon">🏅</span><span class="module-name">Badges &<br>Récompenses</span></a>
+            <a href="equipe_livreurs.html" class="module-card" data-module="equipe_livreurs"><span class="module-icon">👥</span><span class="module-name">Équipe<br>Livreurs</span></a>
+            <a href="parametres.html" class="module-card" data-module="parametres"><span class="module-icon">⚙️</span><span class="module-name" data-i18n="dashboard_settings">Paramètres</span></a>
+        </div>
+    </div>
+
+    <div class="footer-status">
+        <span class="status-dot" id="dot"></span>
+        <span id="status-text" data-i18n="status_connected">Connecté</span>
+    </div>
+</div>
+
+<script>
+    // --- LOGIQUE AUTONOME DU BOUTON INSTALLER (SANS TOUCHER A APP.JS) ---
+    let dashInstallPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault(); 
+        dashInstallPrompt = e; 
+        updateDashboardInstallButton();
+    });
+
+    function updateDashboardInstallButton() {
+        const btn = document.getElementById('btnInstallDashboard');
+        if (!btn) return;
+
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        
+        if (isStandalone) {
+            btn.disabled = true;
+            btn.innerHTML = '<span>📱</span>APP';
+            return;
+        }
+
+        if (!navigator.onLine) {
+            btn.disabled = true;
+            btn.innerHTML = '<span>🌐</span>OFFLINE';
+            return;
+        }
+
+        if (!dashInstallPrompt) {
+            btn.disabled = true;
+            btn.innerHTML = '<span>🔒</span>APP';
+            return;
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<span>⬇️</span>APP';
+    }
+
+    async function handleDashboardInstall() {
+        if (!dashInstallPrompt) return;
+        
+        dashInstallPrompt.prompt();
+        
+        const { outcome } = await dashInstallPrompt.userChoice;
+        if (outcome === 'accepted') {
+            dashInstallPrompt = null;
+            updateDashboardInstallButton(); 
+        }
+    }
+    // -------------------------------------------------------------------
+
+    // LOGIQUE DU BOUTON DE SYNCHRONISATION
+    function updateSyncButtonState() {
+        const btn = document.getElementById('btnForceSync');
+        if (!btn) return;
+        
+        if (!navigator.onLine) {
+            btn.disabled = true;
+            btn.innerHTML = "<span>🌐</span> INTERNET REQUIS POUR SYNCHRONISER";
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = "<span>🔄</span> SYNCHRONISER MES DONNÉES";
+        }
+    }
+
+    async function forceSync() {
+        if (!navigator.onLine) {
+            alert("Veuillez activer votre connexion internet.");
+            return;
+        }
+
+        const btn = document.getElementById('btnForceSync');
+        btn.disabled = true;
+        btn.innerHTML = "<span>⏳</span> SYNCHRONISATION EN COURS...";
+
+        try {
+            if (typeof syncData === 'function') await syncData();
+            if (typeof refreshLocalCache === 'function') await refreshLocalCache({ force: true }); 
+            
+            updateSyncChip();
+            btn.innerHTML = "<span>✅</span> DONNÉES À JOUR !";
+            btn.style.color = "var(--success)";
+            
+            setTimeout(() => {
+                btn.style.color = "";
+                updateSyncButtonState();
+            }, 2000);
+            
+            await checkNotifBadge();
+        } catch (e) {
+            console.error(e);
+            alert("Erreur réseau. Veuillez réessayer.");
+            updateSyncButtonState();
+        }
+    }
+
+    function getSyncMeta() {
+        return {
+            pending: JSON.parse(localStorage.getItem('bestin_pending_sync_count') || '0'),
+            backendUnavailable: JSON.parse(localStorage.getItem('bestin_backend_unavailable') || 'false')
+        };
+    }
+
+    // MISE A JOUR DE LA LOGIQUE DU STATUT MINIMALISTE
+    function updateSyncChip() {
+        const textNode = document.getElementById('sync-text');
+        const dotNode = document.getElementById('sync-dot');
+        if (!textNode || !dotNode) return;
+
+        const { pending, backendUnavailable } = getSyncMeta();
+
+        if (backendUnavailable && pending > 0) {
+            textNode.innerText = `${pending} attente(s) • Serveur injoignable`;
+            textNode.style.color = 'var(--gold)';
+            dotNode.style.background = 'var(--gold)';
+            dotNode.style.boxShadow = '0 0 8px rgba(250, 204, 21, 0.6)';
+            return;
+        }
+
+        if (pending > 0) {
+            textNode.innerText = `${pending} modif(s) en cours de synchronisation`;
+            textNode.style.color = 'var(--accent)';
+            dotNode.style.background = 'var(--accent)';
+            dotNode.style.boxShadow = '0 0 8px rgba(56, 189, 248, 0.6)';
+            return;
+        }
+
+        if (!navigator.onLine) {
+            textNode.innerText = 'Mode hors-ligne actif';
+            textNode.style.color = 'var(--orange)';
+            dotNode.style.background = 'var(--orange)';
+            dotNode.style.boxShadow = '0 0 8px rgba(249, 115, 22, 0.6)';
+            return;
+        }
+
+        // Cas normal : en ligne et synchronisé
+        textNode.innerText = 'À jour et synchronisé';
+        textNode.style.color = 'var(--text-secondary)'; 
+        dotNode.style.background = 'var(--success)';    
+        dotNode.style.boxShadow = '0 0 8px rgba(34, 197, 94, 0.6)'; 
+    }
+
+    function applyRoleAccess(profile) {
+        const role = (profile?.account_role || 'OWNER').toUpperCase();
+        
+        if (role === 'CHILD_LIVREUR') {
+            const allowed = new Set(['espace_livreur', 'parametres']);
+            document.querySelectorAll('.module-card[data-module]').forEach((el) => {
+                const m = el.getAttribute('data-module');
+                el.style.display = allowed.has(m) ? '' : 'none';
+            });
+        } else {
+            document.querySelectorAll('.module-card[data-module]').forEach((el) => {
+                const m = el.getAttribute('data-module');
+                el.style.display = m === 'espace_livreur' ? 'none' : '';
+            });
+        }
+    }
+
+    async function checkNotifBadge() {
+        if (typeof localDB === 'undefined') return;
+
+        const articles = await localDB.getAll('articles');
+        const profile = JSON.parse(localStorage.getItem('bestin_profile') || '{}');
+        const dot = document.getElementById('notif-dot');
+
+        const hasStockIssue = (articles || []).some(a => {
+            const init = parseInt(a.stock_initial || 0, 10) || 0;
+            const vendu = parseInt(a.total_vendu || 0, 10) || 0;
+            const reserve = parseInt(a.stock_reserve || 0, 10) || 0;
+            const stockActuel = init - vendu - reserve;
+            return stockActuel <= (a.stock_alerte || 0);
+        });
+
+        let hasAboIssue = false;
+        const expiration = profile.subscription_until || profile.expiration_date || profile.date_expiration;
+        if (expiration) {
+            const daysLeft = Math.ceil((new Date(expiration) - new Date()) / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 3) hasAboIssue = true;
+        }
+
+        dot.style.display = (hasStockIssue || hasAboIssue) ? "block" : "none";
+    }
+
+    async function initDashboard() {
+        const cached = JSON.parse(localStorage.getItem('bestin_profile') || '{}');
+        const cachedName = cached.shop_name || cached.full_name || "Mon activité";
+        document.getElementById('user_name').innerText = cachedName;
+        applyRoleAccess(cached);
+        updateSyncChip();
+        updateSyncButtonState(); 
+        updateDashboardInstallButton(); 
+
+        if (typeof checkNotifBadge === 'function') {
+            await checkNotifBadge();
+        }
+
+        const { data: { session } } = await _sb.auth.getSession();
+        if (!session && !cached.id) {
+            location.assign('login.html');
+            return;
+        }
+
+        if (navigator.onLine && typeof refreshLocalCache === 'function') {
+            await refreshLocalCache();
+        }
+
+        const latest = JSON.parse(localStorage.getItem('bestin_profile') || '{}');
+        if (latest?.id || latest?.shop_name) {
+            document.getElementById('user_name').innerText = latest.shop_name || latest.full_name || "Mon activité";
+            applyRoleAccess(latest);
+        }
+
+        document.getElementById('status-text').innerText = navigator.onLine
+            ? (window.BestinPrefs?.t('status_online') || 'En ligne')
+            : (window.BestinPrefs?.t('status_offline') || 'Mode Offline');
+
+        if (!navigator.onLine) {
+            document.getElementById('dot').style.background = "#f97316";
+        }
+
+        updateSyncChip();
+        await checkNotifBadge();
+    }
+
+    window.addEventListener('online', async () => {
+        document.getElementById('status-text').innerText = window.BestinPrefs?.t('status_online') || 'En ligne';
+        document.getElementById('dot').style.background = "#2ecc71";
+        updateSyncChip();
+        updateSyncButtonState();
+        updateDashboardInstallButton(); 
+
+        if (typeof refreshLocalCache === 'function') {
+            await refreshLocalCache();
+        }
+        if (typeof syncData === 'function') {
+            syncData();
+        }
+        await checkNotifBadge();
+    });
+
+    window.addEventListener('offline', () => {
+        document.getElementById('status-text').innerText = window.BestinPrefs?.t('status_offline') || 'Mode Offline';
+        document.getElementById('dot').style.background = "#f97316";
+        updateSyncChip();
+        updateSyncButtonState();
+        updateDashboardInstallButton(); 
+    });
+
+    window.addEventListener('bestin-sync-state', updateSyncChip);
+
+    if (window.BestinPrefs) window.BestinPrefs.applyPageTranslations();
+    
+    setTimeout(initDashboard, 500);
+</script>
+</body>
+</html>

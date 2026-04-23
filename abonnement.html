@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEST'IN - MON ABONNEMENT</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <style>
+        :root { --bg: #050a18; --card: #16213e; --accent: #2d62ff; --gold: #D4AF37; --success: #4ade80; --orange: #f97316; }
+        body { margin: 0; background-color: #000; font-family: 'Segoe UI', sans-serif; color: white; display: flex; justify-content: center; }
+        .mobile-container { width: 100%; max-width: 430px; min-height: 100vh; background-color: var(--bg); padding: 20px; box-sizing: border-box; }
+        .header { display: flex; align-items: center; margin-bottom: 25px; }
+        .back-btn { cursor: pointer; font-size: 1.5em; padding-right: 15px; color: white; text-decoration: none; }
+        .status-card { background: var(--card); border-radius: 20px; padding: 20px; text-align: center; border: 1px solid var(--gold); margin-bottom: 20px; }
+        .label-gold { font-size: 0.75em; color: var(--gold); font-weight: bold; letter-spacing: 1px; }
+        .mvola-box { background: #ffcc00; color: #000; border-radius: 15px; padding: 15px; margin: 20px 0; font-weight: bold; text-align: center; border: 2px solid #e6b800; cursor: pointer; }
+        .form-group { margin-top: 20px; }
+        label { display: block; font-size: 0.75em; color: #8a99af; margin-bottom: 8px; font-weight: bold; }
+        input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #2d3748; background: #0b1426; color: white; box-sizing: border-box; outline: none; }
+        .btn-confirm { width: 100%; padding: 15px; background: var(--success); border: none; color: #000; border-radius: 12px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        .btn-confirm:disabled { background: #2d3748; color: #8a99af; cursor: not-allowed; }
+        .offline-warning { display: none; background: rgba(249, 115, 22, 0.1); color: var(--orange); font-size: 0.7em; padding: 8px; text-align: center; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--orange); }
+        .badge-trial { background: var(--orange); color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.7em; margin-left: 5px; }
+        #syncState { font-size: 0.75em; margin-top: 12px; opacity: 0.9; }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <div class="mobile-container">
+        <div id="offline-msg" class="offline-warning">🌐 Connexion internet requise pour confirmer un paiement</div>
+
+        <div class="header">
+            <a href="profil.html" class="back-btn">❮</a>
+            <h2 style="font-size: 1.2em; margin: 0;">MON ABONNEMENT</h2>
+        </div>
+
+        <div class="status-card">
+            <div class="label-gold">MON ID VENDEUR</div>
+            <div id="vendeur_id_display" style="font-size: 1.3em; font-weight: bold; margin: 5px 0; color: white;">...</div>
+            <hr style="opacity: 0.1; margin: 15px 0;">
+            <div class="label-gold">STATUT ACTUEL</div>
+            <div id="status_text" style="font-size: 1.1em; font-weight: bold; margin-top: 5px;">Vérification...</div>
+            <div id="expiry_date" style="font-size: 0.8em; opacity: 0.6; margin-top: 5px;">-- / -- / ----</div>
+            <div id="syncState">Chargement...</div>
+        </div>
+
+        <div style="color: var(--gold); font-size: 0.85em; font-weight: bold; text-align: center;">RÉABONNEMENT (30 JOURS - 30 000 Ariary)</div>
+
+        <div class="mvola-box" onclick="copyNumber()">
+            📲 Envoyer le paiement MVola au :<br>
+            <span id="mvola-num" style="font-size: 1.4em;">+261 34 87 759 72</span><br>
+            <span style="font-size: 0.7em; font-weight: normal; opacity: 0.8;">(Appuyez pour copier le numéro)</span>
+        </div>
+
+        <div class="form-group">
+            <label>RÉFÉRENCE DE TRANSACTION MVOLA</label>
+            <input type="text" id="ref_input" placeholder="Ex: 84930221">
+        </div>
+
+        <button id="submit_btn" class="btn-confirm" onclick="sendTransaction()">CONFIRMER LE PAIEMENT</button>
+
+        <div style="font-size: 0.75em; color: #8a99af; margin-top: 15px; line-height: 1.5; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
+            🚀 <b>Activation :</b> Une fois la référence envoyée, notre équipe vérifie le paiement. Votre accès sera prolongé de 30 jours dès validation (max 24h).
+        </div>
+    </div>
+
+    <script>
+        function copyNumber() {
+            navigator.clipboard.writeText("+261348775972");
+            alert("Numéro copié !");
+        }
+
+        function getCachedProfile() {
+            return JSON.parse(localStorage.getItem('bestin_profile') || '{}');
+        }
+
+        function getCachedAbo() {
+            return JSON.parse(localStorage.getItem('cache_abo') || 'null');
+        }
+
+        function setCachedAbo(abo) {
+            localStorage.setItem('cache_abo', JSON.stringify(abo));
+        }
+
+        function renderSyncState() {
+            const pending = JSON.parse(localStorage.getItem('bestin_pending_sync_count') || '0');
+            const backendUnavailable = JSON.parse(localStorage.getItem('bestin_backend_unavailable') || 'false');
+            const node = document.getElementById('syncState');
+
+            if (!navigator.onLine) {
+                node.innerText = "Lecture locale active";
+                node.style.color = "var(--orange)";
+                return;
+            }
+
+            if (backendUnavailable && pending > 0) {
+                node.innerText = `${pending} opération(s) locale(s) en attente • serveur momentanément indisponible`;
+                node.style.color = "var(--gold)";
+                return;
+            }
+
+            node.innerText = "État synchronisé";
+            node.style.color = "var(--success)";
+        }
+
+        function renderAboStatus(abo, profileData) {
+            const statusEl = document.getElementById('status_text');
+            const expiryEl = document.getElementById('expiry_date');
+            const btn = document.getElementById('submit_btn');
+
+            btn.disabled = false;
+            btn.innerText = "CONFIRMER LE PAIEMENT";
+
+            if (abo) {
+                const statusMap = {
+                    'actif': '✅ ABONNEMENT ACTIF',
+                    'en attente': '⏳ VALIDATION EN COURS',
+                    'expire': '❌ ABONNEMENT EXPIRÉ',
+                    'refuse': '❌ PAIEMENT REFUSÉ'
+                };
+
+                statusEl.innerText = statusMap[abo.statut] || 'STATUT INCONNU';
+
+                if (abo.date_fin) {
+                    expiryEl.innerText = "Expire le : " + new Date(abo.date_fin).toLocaleDateString('fr-FR');
+                } else {
+                    expiryEl.innerText = '-- / -- / ----';
+                }
+
+                if (abo.statut === 'en attente') {
+                    btn.disabled = true;
+                    btn.innerText = "VÉRIFICATION EN COURS...";
+                }
+                return;
+            }
+
+            const createdAt = profileData.created_at ? new Date(profileData.created_at) : null;
+            if (!createdAt) {
+                statusEl.innerText = 'Aucun abonnement trouvé';
+                expiryEl.innerText = '-- / -- / ----';
+                return;
+            }
+
+            const dateFinEssai = new Date(createdAt);
+            dateFinEssai.setDate(dateFinEssai.getDate() + 10);
+
+            if (new Date() > dateFinEssai) {
+                statusEl.innerText = '❌ ESSAI TERMINÉ';
+                expiryEl.innerText = "Période d'essai expirée.";
+            } else {
+                statusEl.innerHTML = '🎁 ESSAI GRATUIT <span class="badge-trial">10j</span>';
+                expiryEl.innerText = "Expire le : " + dateFinEssai.toLocaleDateString('fr-FR');
+            }
+        }
+
+        async function initPage() {
+            renderSyncState();
+
+            if (!navigator.onLine) {
+                document.getElementById('offline-msg').style.display = 'block';
+            } else {
+                document.getElementById('offline-msg').style.display = 'none';
+            }
+
+            const cachedProfile = getCachedProfile();
+            let abo = getCachedAbo();
+
+            if (cachedProfile && cachedProfile.vendeur_id) {
+                document.getElementById('vendeur_id_display').innerText = cachedProfile.vendeur_id;
+            }
+
+            renderAboStatus(abo, cachedProfile || {});
+
+            const { data: { session } } = await _sb.auth.getSession();
+
+            if (!session && !cachedProfile.id) {
+                window.location.assign('login.html');
+                return;
+            }
+
+            if (navigator.onLine && typeof refreshLocalCache === 'function') {
+                await refreshLocalCache();
+                const refreshedProfile = getCachedProfile();
+                abo = getCachedAbo();
+
+                if (refreshedProfile && refreshedProfile.vendeur_id) {
+                    document.getElementById('vendeur_id_display').innerText = refreshedProfile.vendeur_id;
+                }
+
+                renderAboStatus(abo, refreshedProfile || {});
+            }
+
+            renderSyncState();
+        }
+
+        async function sendTransaction() {
+            if (!navigator.onLine) {
+                alert("Connexion requise");
+                return;
+            }
+
+            const ref = document.getElementById('ref_input').value.trim();
+            if (!ref) {
+                alert("Entrez la référence");
+                return;
+            }
+
+            const { data: { user } } = await _sb.auth.getUser();
+            if (!user) {
+                window.location.assign('login.html');
+                return;
+            }
+
+            const btn = document.getElementById('submit_btn');
+            btn.disabled = true;
+            btn.innerText = "Envoi...";
+
+            const payload = {
+                user_id: user.id,
+                reference_transaction: ref,
+                statut: 'en attente',
+                updated_at: new Date().toISOString()
+            };
+
+            const { error } = await _sb.from('abonnements').upsert(payload, { onConflict: 'user_id' });
+
+            if (error) {
+                alert("Erreur : " + error.message);
+                btn.disabled = false;
+                btn.innerText = "CONFIRMER LE PAIEMENT";
+                return;
+            }
+
+            setCachedAbo(payload);
+
+            if (typeof refreshLocalCache === 'function') {
+                await refreshLocalCache();
+            }
+
+            alert("Référence reçue !");
+            location.reload();
+        }
+
+        window.addEventListener('online', renderSyncState);
+        window.addEventListener('offline', renderSyncState);
+        window.addEventListener('bestin-sync-state', renderSyncState);
+
+        initPage();
+    </script>
+</body>
+</html>

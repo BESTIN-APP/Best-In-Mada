@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEST'IN - Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <style>
+        :root { --bg:#050a18; --card:#16213e; --accent:#2d62ff; --gold:#D4AF37; --success:#2ecc71; --danger:#ef4444; --warn:#f97316; }
+        body { margin:0; background:#000; color:#fff; font-family:'Segoe UI',sans-serif; display:flex; justify-content:center; }
+        .container { width:100%; max-width:980px; background:var(--bg); min-height:100vh; padding:20px; box-sizing:border-box; }
+        .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap: 12px; flex-wrap: wrap; }
+        h1 { margin:0; font-size:1.2em; color:var(--gold); }
+        .status { font-size:.8em; opacity:.85; }
+        .panel { background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px; margin-bottom:14px; }
+        .title { color:var(--gold); text-transform:uppercase; font-size:.75em; letter-spacing:1px; margin-bottom:10px; }
+        .toolbar { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:10px; }
+        label { font-size:.75em; color:var(--gold); }
+        input,select { width:100%; box-sizing:border-box; padding:9px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.13); background:#0b1426; color:white; }
+        .btn { border:none; padding:9px 12px; border-radius:8px; font-weight:700; cursor:pointer; }
+        .btn-primary{background:var(--accent);color:#fff;}
+        .btn-success{background:var(--success);color:#fff;}
+        .btn-danger{background:rgba(239,68,68,.13);color:#ff8f8f;border:1px solid rgba(239,68,68,.4);}
+        .btn-warn{background:rgba(249,115,22,.12);color:#f8b36b;border:1px solid rgba(249,115,22,.35);}
+        .table { width:100%; border-collapse:collapse; }
+        .table th,.table td { text-align:left; padding:10px 8px; border-bottom:1px solid rgba(255,255,255,.08); font-size:.84em; vertical-align: top; }
+        .table th { color:var(--gold); font-size:.72em; text-transform:uppercase; }
+        .badge { padding:4px 8px; border-radius:6px; font-size:.68em; font-weight:700; text-transform:uppercase; }
+        .pending{background:rgba(249,115,22,.15);color:var(--warn);}
+        .active{background:rgba(46,204,113,.16);color:var(--success);}
+        .off{background:rgba(239,68,68,.15);color:var(--danger);}
+        #stateBox { font-size:.82em; color:#b6c3d9; line-height:1.5; }
+    </style>
+
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Administration BEST'IN</h1>
+        <div class="status" id="admin-status">Vérification...</div>
+    </div>
+
+    <div class="panel">
+        <div id="stateBox">Chargement...</div>
+    </div>
+
+    <div class="panel">
+        <div class="title">Abonnements</div>
+        <div class="toolbar">
+            <div><label>Durée validation (jours)</label><input type="number" id="days" value="30" min="1"></div>
+            <div><label>Filtre vendeur</label><input type="text" id="filter-vendeur" placeholder="BEST-1234"></div>
+            <div><label>Recherche</label><input type="text" id="filter-query" placeholder="Référence ou UUID"></div>
+            <div><label>Statut</label><select id="filter-status"><option value="">Tous</option><option value="en attente">En attente</option><option value="actif">Actif</option><option value="refuse">Refusé</option></select></div>
+        </div>
+        <div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="loadAbonnements()">Actualiser</button>
+            <button class="btn btn-primary" onclick="exportCsv()">Exporter CSV</button>
+        </div>
+        <table class="table">
+            <thead><tr><th>Vendeur</th><th>Référence</th><th>Statut</th><th>Expire le</th><th>Actions</th></tr></thead>
+            <tbody id="abo-body"></tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <div class="title">Gestion des Livreurs Désactivés</div>
+        <div style="font-size:0.8em; opacity:0.8; margin-bottom:10px;">Ces comptes ont été désactivés par leur propriétaire. Vous pouvez les supprimer définitivement pour révoquer leur accès.</div>
+        <table class="table">
+            <thead><tr><th>Livreur</th><th>Email</th><th>Propriétaire</th><th>Action</th></tr></thead>
+            <tbody id="disabled-livreurs-body"></tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <div class="title">Codes promo</div>
+        <div class="toolbar">
+            <div><label>Code</label><input id="promo-code" placeholder="BESTIN-ANNIV-2026"></div>
+            <div><label>Jours offerts</label><input id="promo-days" type="number" value="5" min="1" max="60"></div>
+            <div><label>Usage max (optionnel)</label><input id="promo-max" type="number" min="1" placeholder="Ex: 100"></div>
+            <div><label>Expire le (optionnel)</label><input id="promo-exp" type="date"></div>
+        </div>
+        <button class="btn btn-success" onclick="createPromoCode()">Créer le code promo</button>
+        <div style="height:12px"></div>
+        <table class="table">
+            <thead><tr><th>Code</th><th>Jours</th><th>Usages</th><th>Expiration</th><th>Statut</th><th>Action</th></tr></thead>
+            <tbody id="promo-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let isAdmin = false;
+let abonnementData = [];
+let profileMap = {};
+let promoData = [];
+
+function formatDate(v) {
+  if (!v) return '--';
+  const d = new Date(v);
+  return isNaN(d) ? '--' : d.toLocaleDateString('fr-FR');
+}
+
+function statusBadge(s) {
+  if (s === 'actif') return '<span class="badge active">Actif</span>';
+  if (s === 'refuse') return '<span class="badge off">Refusé</span>';
+  return '<span class="badge pending">En attente</span>';
+}
+
+function updateStateBox() {
+  const box = document.getElementById('stateBox');
+  if (!navigator.onLine) {
+    box.innerText = "Connexion internet requise pour l'administration.";
+    return;
+  }
+  box.innerText = isAdmin
+    ? "Administration connectée. Les actions sont exécutées directement sur Supabase."
+    : "Vérification des droits administrateur...";
+}
+
+async function ensureAdmin() {
+  const { data:{ session } } = await _sb.auth.getSession();
+  if (!session) {
+    location.assign('login.html');
+    return false;
+  }
+
+  const { data: profile } = await _sb.from('profiles').select('is_admin').eq('id', session.user.id).single();
+  isAdmin = !!profile?.is_admin;
+
+  document.getElementById('admin-status').innerText = isAdmin ? 'Admin connecté' : 'Accès refusé';
+  updateStateBox();
+
+  if (!isAdmin) {
+    alert('Accès réservé admin.');
+    return false;
+  }
+
+  return true;
+}
+
+function getFilteredItems() {
+  const vendeurFilter = (document.getElementById('filter-vendeur').value || '').toLowerCase().trim();
+  const query = (document.getElementById('filter-query').value || '').toLowerCase().trim();
+  const status = document.getElementById('filter-status').value;
+
+  return abonnementData.filter(a => {
+    const vendeur = (profileMap[a.user_id] || '').toLowerCase();
+    const ref = (a.reference_transaction || '').toLowerCase();
+    const uid = (a.user_id || '').toLowerCase();
+
+    return (!status || (a.statut || 'en attente') === status)
+      && (!vendeurFilter || vendeur.includes(vendeurFilter))
+      && (!query || ref.includes(query) || uid.includes(query));
+  });
+}
+
+function renderAbonnements(items) {
+  const body = document.getElementById('abo-body');
+  if (!items.length) {
+    body.innerHTML = '<tr><td colspan="5" style="opacity:.65">Aucune demande.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = items.map(a => `
+    <tr>
+      <td>${profileMap[a.user_id] || a.user_id}</td>
+      <td>${a.reference_transaction || '--'}</td>
+      <td>${statusBadge(a.statut)}</td>
+      <td>${formatDate(a.date_fin)}</td>
+      <td>
+        <button class="btn btn-success" onclick="approve('${a.user_id}')">Valider</button>
+        <button class="btn btn-danger" onclick="refuse('${a.user_id}')">Refuser</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function loadAbonnements() {
+  if (!isAdmin) return;
+  if (!navigator.onLine) {
+    alert("Connexion internet requise.");
+    return;
+  }
+
+  const { data: abonnements, error } = await _sb
+    .from('abonnements')
+    .select('user_id, reference_transaction, statut, date_fin, updated_at');
+
+  if (error) return alert(error.message);
+
+  const ids = [...new Set((abonnements || []).map(a => a.user_id).filter(Boolean))];
+  let profiles = [];
+
+  if (ids.length) {
+    const res = await _sb.from('profiles').select('id,vendeur_id').in('id', ids);
+    profiles = res.data || [];
+  }
+
+  profileMap = Object.fromEntries(profiles.map(p => [p.id, p.vendeur_id]));
+  abonnementData = (abonnements || []).sort((a,b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
+  renderAbonnements(getFilteredItems());
+}
+
+async function fallbackApprove(userId, days) {
+  const now = new Date();
+  const end = new Date(now.getTime() + (Math.max(1, days) * 86400000));
+
+  const { error: upAboErr } = await _sb
+    .from('abonnements')
+    .upsert([{
+      user_id: userId,
+      statut: 'actif',
+      date_fin: end.toISOString(),
+      updated_at: now.toISOString()
+    }], { onConflict: 'user_id' });
+  if (upAboErr) throw upAboErr;
+
+  const { error: upProfErr } = await _sb
+    .from('profiles')
+    .update({ subscription_until: end.toISOString(), updated_at: now.toISOString() })
+    .eq('id', userId);
+  if (upProfErr) throw upProfErr;
+}
+
+async function fallbackRefuse(userId) {
+  const now = new Date().toISOString();
+  const { error } = await _sb
+    .from('abonnements')
+    .update({ statut: 'refuse', updated_at: now })
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+async function approve(userId) {
+  if (!navigator.onLine) return alert("Connexion internet requise.");
+  const days = parseInt(document.getElementById('days').value, 10) || 30;
+
+  let error = null;
+
+  try {
+    const rpcRes = await _sb.rpc('approve_abonnement', { p_user_id: userId, p_days: days });
+    error = rpcRes.error || null;
+
+    if (error) {
+      const msg = (error.message || '').toLowerCase();
+      const missingRpcOrTable = msg.includes('approve_abonnement') || msg.includes('abonnements_history') || msg.includes('does not exist') || msg.includes('not found');
+      if (missingRpcOrTable) {
+        await fallbackApprove(userId, days);
+        error = null;
+      }
+    }
+  } catch (e) {
+    try {
+      await fallbackApprove(userId, days);
+      error = null;
+    } catch (fallbackErr) {
+      error = fallbackErr;
+    }
+  }
+
+  if (error) return alert(error.message || 'Validation impossible.');
+  await loadAbonnements();
+}
+
+async function refuse(userId) {
+  if (!navigator.onLine) return alert("Connexion internet requise.");
+
+  let error = null;
+
+  try {
+    const rpcRes = await _sb.rpc('refuse_abonnement', { p_user_id: userId });
+    error = rpcRes.error || null;
+
+    if (error) {
+      const msg = (error.message || '').toLowerCase();
+      const missingRpcOrTable = msg.includes('refuse_abonnement') || msg.includes('abonnements_history') || msg.includes('does not exist') || msg.includes('not found');
+      if (missingRpcOrTable) {
+        await fallbackRefuse(userId);
+        error = null;
+      }
+    }
+  } catch (e) {
+    try {
+      await fallbackRefuse(userId);
+      error = null;
+    } catch (fallbackErr) {
+      error = fallbackErr;
+    }
+  }
+
+  if (error) return alert(error.message || 'Refus impossible.');
+  await loadAbonnements();
+}
+
+async function createPromoCode() {
+  if (!isAdmin) return;
+  if (!navigator.onLine) return alert("Connexion internet requise.");
+
+  const code = (document.getElementById('promo-code').value || '').trim().toUpperCase();
+  const jours = parseInt(document.getElementById('promo-days').value, 10) || 0;
+  const usage_max_raw = document.getElementById('promo-max').value;
+  const exp = document.getElementById('promo-exp').value;
+
+  if (!code || jours < 1) return alert('Code et jours obligatoires.');
+
+  const payload = { code, jours_offerts: jours, actif: true };
+  if (usage_max_raw) payload.usage_max = parseInt(usage_max_raw, 10);
+  if (exp) payload.expires_at = exp + 'T23:59:59Z';
+
+  const { error } = await _sb.from('promo_codes').upsert([payload], { onConflict: 'code' });
+  if (error) return alert(error.message);
+
+  alert('Code promo enregistré.');
+  ['promo-code','promo-max','promo-exp'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('promo-days').value = '5';
+  loadPromoCodes();
+}
+
+function renderPromo() {
+  const body = document.getElementById('promo-body');
+  if (!promoData.length) {
+    body.innerHTML = '<tr><td colspan="6" style="opacity:.65">Aucun code promo.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = promoData.map(p => `
+    <tr>
+      <td>${p.code}</td>
+      <td>${p.jours_offerts}</td>
+      <td>${p.usage_count || 0}${p.usage_max ? ` / ${p.usage_max}` : ''}</td>
+      <td>${formatDate(p.expires_at)}</td>
+      <td>${p.actif ? '<span class="badge active">Actif</span>' : '<span class="badge off">Inactif</span>'}</td>
+      <td><button class="btn ${p.actif ? 'btn-warn' : 'btn-success'}" onclick="togglePromo('${p.id}', ${p.actif ? 'false' : 'true'})">${p.actif ? 'Désactiver' : 'Activer'}</button></td>
+    </tr>
+  `).join('');
+}
+
+async function loadPromoCodes() {
+  if (!isAdmin) return;
+  if (!navigator.onLine) return;
+
+  const { data, error } = await _sb
+    .from('promo_codes')
+    .select('id, code, jours_offerts, usage_count, usage_max, expires_at, actif, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) return alert(error.message);
+  promoData = data || [];
+  renderPromo();
+}
+
+async function togglePromo(id, actif) {
+  if (!navigator.onLine) return alert("Connexion internet requise.");
+  const { error } = await _sb.from('promo_codes').update({ actif }).eq('id', id);
+  if (error) return alert(error.message);
+  loadPromoCodes();
+}
+
+function exportCsv() {
+  const rows = getFilteredItems().map(a => ({
+    vendeur_id: profileMap[a.user_id] || '',
+    user_id: a.user_id,
+    reference_transaction: a.reference_transaction || '',
+    statut: a.statut || 'en attente',
+    date_fin: a.date_fin || ''
+  }));
+
+  const header = ['vendeur_id','user_id','reference_transaction','statut','date_fin'];
+  const csv = [header.join(',')]
+    .concat(rows.map(r => header.map(h => `"${String(r[h]).replace(/"/g,'""')}"`).join(',')))
+    .join('\n');
+
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'abonnements.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function loadDisabledLivreurs() {
+  if (!isAdmin) return;
+  if (!navigator.onLine) return;
+
+  const { data, error } = await _sb.from('profiles')
+    .select('id, full_name, email, parent_owner_id, owner:parent_owner_id(vendeur_id)')
+    .eq('account_role', 'CHILD_LIVREUR')
+    .eq('account_status', 'DISABLED');
+  
+  if (error) {
+    console.error(error);
+    return alert("Erreur lors du chargement des livreurs désactivés.");
+  }
+
+  renderDisabledLivreurs(data || []);
+}
+
+function renderDisabledLivreurs(livreurs) {
+  const body = document.getElementById('disabled-livreurs-body');
+  if (!livreurs.length) {
+    body.innerHTML = '<tr><td colspan="4" style="opacity:.65">Aucun livreur désactivé.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = livreurs.map(l => `
+    <tr>
+      <td>${l.full_name || 'N/A'}</td>
+      <td>${l.email || '-'}</td>
+      <td>${l.owner?.vendeur_id || l.parent_owner_id || '-'}</td>
+      <td><button class="btn btn-danger" onclick="deleteLivreurPermanently('${l.id}')">Supprimer Définitivement</button></td>
+    </tr>
+  `).join('');
+}
+
+async function deleteLivreurPermanently(userId) {
+  if (!navigator.onLine) return alert("Connexion internet requise.");
+  if (!confirm(`ATTENTION : Action irréversible.\n\nSupprimer définitivement le compte de ce livreur ? Il ne pourra plus jamais se connecter.`)) return;
+  
+  const { error } = await _sb.rpc('delete_user_by_id', { p_user_id: userId });
+
+  if (error) {
+    console.error(error);
+    return alert("Échec de la suppression : " + error.message);
+  }
+
+  alert("Le livreur a été supprimé définitivement.");
+  loadDisabledLivreurs();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  updateStateBox();
+
+  const ok = await ensureAdmin();
+  if (!ok) return;
+
+  await loadAbonnements();
+  await loadPromoCodes();
+  await loadDisabledLivreurs();
+
+  ['filter-vendeur','filter-query','filter-status'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => renderAbonnements(getFilteredItems()));
+    document.getElementById(id).addEventListener('change', () => renderAbonnements(getFilteredItems()));
+  });
+});
+
+window.addEventListener('online', updateStateBox);
+window.addEventListener('offline', updateStateBox);
+</script>
+</body>
+</html>

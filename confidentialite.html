@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - Confidentialité</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --gold: #facc15; 
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin:0; 
+            background:var(--bg); 
+            color:var(--text-primary); 
+            font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            display:flex; 
+            justify-content:center; 
+        }
+
+        .container { 
+            width:100%; 
+            max-width:430px; 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing:border-box; 
+        }
+
+        .header { 
+            display:flex; 
+            align-items:center; 
+            padding: 16px;
+            flex-shrink: 0;
+        }
+        .back-btn { 
+            color:var(--text-primary); 
+            text-decoration:none; 
+            font-size:1.8rem; 
+            margin-right:12px; 
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+
+        .content-scroll {
+            overflow-y: auto;
+            padding: 0 16px 16px 16px;
+            flex-grow: 1;
+        }
+
+        .card { 
+            background:var(--card); 
+            border:1px solid rgba(255,255,255,.08); 
+            border-radius:18px; 
+            padding:16px; 
+            margin-bottom:12px; 
+        }
+        .card h3 { 
+            margin:0 0 8px; 
+            color:var(--gold); 
+            font-size:1.1rem; 
+            font-weight: 700;
+        }
+        .card p { 
+            margin:0; 
+            font-size:.95rem; 
+            line-height:1.55; 
+            color: var(--text-primary);
+        }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <a href="parametres.html" class="back-btn">‹</a>
+        <h2>Confidentialité</h2>
+    </div>
+
+    <div class="content-scroll">
+        <div class="card"><h3>Ce que nous collectons</h3><p>Nous collectons uniquement les données utiles au bon fonctionnement de votre activité dans l'application (ex: articles, ventes, informations de compte).</p></div>
+        <div class="card"><h3>Protection des données</h3><p>Vos données sont protégées et stockées de façon sécurisée. Une partie peut aussi être gardée localement sur votre appareil pour le mode hors-ligne.</p></div>
+        <div class="card"><h3>Partage des données</h3><p>Nous ne vendons pas vos données commerciales. Elles ne sont pas partagées avec des tiers à des fins commerciales.</p></div>
+        <div class="card"><h3>Vos droits</h3><p>Vous pouvez demander la correction ou la suppression de vos données via le support, selon les conditions légales applicables.</p></div>
+        <div class="card"><h3>Bonnes pratiques</h3><p>Pour votre sécurité, évitez de partager vos identifiants et déconnectez-vous des appareils non sécurisés.</p></div>
+    </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

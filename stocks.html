@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEST'IN - État des Stocks</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script> 
+    <style>
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --accent: #38bdf8; 
+            --gold: #facc15; 
+            --success: #22c55e;
+            --danger: #f43f5e;
+            --warn: #f97316;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: var(--text-primary); 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+        }
+
+        .mobile-view { 
+            width: 100%; 
+            max-width: 430px; 
+            background: var(--bg); 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box; 
+        }
+
+        .header { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            padding: 16px;
+            flex-shrink: 0;
+        }
+
+        .back-btn { 
+            color: var(--text-primary); 
+            text-decoration: none; 
+            font-size: 1.8em; 
+            line-height: 1; 
+        }
+        
+        .header h2 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+        
+        .header p {
+            margin: 2px 0 0 0;
+            font-size: 0.75em;
+            color: var(--text-secondary);
+        }
+
+        .controls-container {
+            padding: 0 16px 16px 16px;
+            flex-shrink: 0;
+        }
+
+        .search-box { 
+            background: var(--card); 
+            border: 1px solid #334155; 
+            padding: 16px; 
+            border-radius: 18px; 
+            display: grid; 
+            gap: 12px; 
+        }
+
+        input { 
+            background: var(--bg); 
+            border: 1px solid #334155; 
+            color: var(--text-primary); 
+            padding: 14px; 
+            border-radius: 12px; 
+            width: 100%; 
+            box-sizing: border-box; 
+            outline: none; 
+            font-size: 1em;
+        }
+
+        .date-range { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        input[type="date"] { color-scheme: dark; }
+
+        .btn-action { 
+            padding: 12px; 
+            border-radius: 12px; 
+            border: none; 
+            background: var(--accent); 
+            color: #fff; 
+            font-weight: bold; 
+            font-size: 0.9em; 
+            cursor: pointer; 
+        }
+
+        .table-container {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 0.8em;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th { 
+            background: var(--bg); 
+            color: var(--text-secondary); 
+            padding: 12px 5px; 
+            text-transform: uppercase; 
+            font-size: 0.75em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-align: center;
+            border-bottom: 1px solid var(--card);
+        }
+        
+        th.col-article { width: 35%; text-align: left; padding-left: 16px; }
+        th.col-chiffre { width: 13%; }
+        th.col-statut { width: 25%; }
+
+        tbody tr:active {
+            background-color: var(--card);
+        }
+
+        td { 
+            padding: 14px 5px; 
+            text-align: center; 
+            border-bottom: 1px solid var(--card); 
+            vertical-align: middle;
+        }
+
+        .art-name { 
+            text-align: left; 
+            padding-left: 16px; 
+            font-weight: 600; 
+            color: var(--text-primary);
+            font-size: 1.05em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+        }
+        
+        .val-vendu { color: var(--accent); font-weight: 600; }
+        .val-res { color: var(--gold); font-weight: 600; }
+        .val-phys { font-weight: 700; font-size: 1.1em; }
+
+        .status-pill {
+            display: inline-block;
+            padding: 5px 8px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85em;
+            text-align: center;
+        }
+        .status-ok { background-color: rgba(34, 197, 94, 0.1); color: var(--success); }
+        .status-low { background-color: rgba(249, 115, 22, 0.1); color: var(--warn); }
+        .status-out { background-color: rgba(244, 63, 94, 0.1); color: var(--danger); }
+
+        tfoot td {
+            padding: 0;
+        }
+        #loadMoreBtn {
+            width: 100%;
+            background: none;
+            border: none;
+            color: var(--accent);
+            padding: 20px;
+            font-weight: 600;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        #printableStocks { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #printableStocks, #printableStocks * { visibility: visible; }
+            #printableStocks {
+                display: block !important; position: absolute; left: 0; top: 0; width: 100%;
+                color: black !important; background: white !important; padding: 20px; font-family: 'Courier New', monospace;
+            }
+        }
+    </style>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+<div id="printableStocks">
+    <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
+        <h2 style="margin:0; text-transform: uppercase;">ÉTAT DES STOCKS</h2>
+        <p id="pStockRange" style="margin:5px 0;"></p>
+    </div>
+    <table style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align:left; border-bottom: 1px solid #000;">
+                <th>ARTICLE</th>
+                <th style="text-align:right">INIT.</th>
+                <th style="text-align:right">VENDU</th>
+                <th style="text-align:right">RÉS.</th>
+                <th style="text-align:right">PHYS.</th>
+            </tr>
+        </thead>
+        <tbody id="pStockBody"></tbody>
+    </table>
+</div>
+
+<div class="mobile-view">
+    <div class="header">
+        <a href="dashboard.html" class="back-btn">‹</a>
+        <div>
+            <h2>État des Stocks</h2>
+            <p id="syncStatus">Synchronisation...</p>
+        </div>
+    </div>
+
+    <div class="controls-container">
+        <div class="search-box">
+            <input type="text" id="searchArt" placeholder="🔍 Rechercher un article..." oninput="filtrer()">
+            <div class="date-range">
+                <input type="date" id="start_date" oninput="filtrer()">
+                <input type="date" id="end_date" oninput="filtrer()">
+            </div>
+            <button class="btn-action" type="button" onclick="telechargerStocks()">TÉLÉCHARGER LE RAPPORT</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-article">Article</th>
+                    <th class="col-chiffre">Init.</th>
+                    <th class="col-chiffre">Vendu</th>
+                    <th class="col-chiffre">Rés.</th>
+                    <th class="col-chiffre">Phys.</th>
+                    <th class="col-statut">Statut</th>
+                </tr>
+            </thead>
+            <tbody id="stockTable"></tbody>
+            <tfoot id="tableFooter" style="display: none;">
+                <tr>
+                    <td colspan="6">
+                        <button id="loadMoreBtn" onclick="loadMore()">Afficher plus</button>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<script>
+    let allArticles = [];
+    let currentlyDisplayedArticles = [];
+    let currentPage = 1;
+    const ITEMS_PER_PAGE = 50;
+
+    function getSyncInfo() {
+        return {
+            pending: JSON.parse(localStorage.getItem('bestin_pending_sync_count') || '0'),
+            backendUnavailable: JSON.parse(localStorage.getItem('bestin_backend_unavailable') || 'false')
+        };
+    }
+
+    function updateStatus() {
+        const status = document.getElementById('syncStatus');
+        const { pending, backendUnavailable } = getSyncInfo();
+
+        if (!navigator.onLine) {
+            status.innerText = "Mode hors-ligne";
+            status.style.color = "var(--warn)";
+            return;
+        }
+
+        if (backendUnavailable && pending > 0) {
+            status.innerText = `${pending} sync en attente • serveur indisponible`;
+            status.style.color = "var(--gold)";
+            return;
+        }
+
+        if (pending > 0) {
+            status.innerText = `${pending} modification(s) en attente`;
+            status.style.color = "var(--accent)";
+            return;
+        }
+
+        status.innerText = "Données synchronisées";
+        status.style.color = "var(--success)";
+    }
+
+    async function initPage() {
+        try {
+            const data = await localDB.getAll('articles');
+            allArticles = (data || [])
+                .filter(a => a.archived === false || a.archived === undefined)
+                .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+            filtrer();
+            updateStatus();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('syncStatus').innerText = "Erreur de lecture locale";
+        }
+    }
+
+    function render(data) {
+        const tableBody = document.getElementById('stockTable');
+        const tableFooter = document.getElementById('tableFooter');
+        
+        currentlyDisplayedArticles = data; 
+        currentPage = 1;
+
+        if (!data || data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="6" style="padding: 40px; text-align: center; opacity: 0.5;">Aucun article trouvé.</td></tr>`;
+            tableFooter.style.display = 'none';
+            return;
+        }
+
+        const itemsToShow = data.slice(0, ITEMS_PER_PAGE);
+        displayItems(itemsToShow);
+
+        if (data.length > ITEMS_PER_PAGE) {
+            tableFooter.style.display = 'table-footer-group';
+            document.getElementById('loadMoreBtn').innerText = `Afficher les ${Math.min(ITEMS_PER_PAGE, data.length - ITEMS_PER_PAGE)} suivants`;
+        } else {
+            tableFooter.style.display = 'none';
+        }
+    }
+
+    function loadMore() {
+        currentPage++;
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        const end = currentPage * ITEMS_PER_PAGE;
+        const newItems = currentlyDisplayedArticles.slice(start, end);
+        
+        displayItems(newItems, true);
+
+        if (end >= currentlyDisplayedArticles.length) {
+            document.getElementById('tableFooter').style.display = 'none';
+        } else {
+            const remaining = currentlyDisplayedArticles.length - end;
+            document.getElementById('loadMoreBtn').innerText = `Afficher les ${Math.min(ITEMS_PER_PAGE, remaining)} suivants`;
+        }
+    }
+
+    function displayItems(items, append = false) {
+        const tableBody = document.getElementById('stockTable');
+
+        const content = items.map(a => {
+            const init = parseInt(a.stock_initial || 0, 10) || 0;
+            const vendu = parseInt(a.total_vendu || 0, 10) || 0;
+            const res = parseInt(a.stock_reserve || 0, 10) || 0;
+            const phys = init - vendu - res;
+            
+            let statusClass = 'status-ok';
+            let statusText = 'EN STOCK';
+
+            if (phys <= 0) {
+                statusClass = 'status-out';
+                statusText = 'ÉPUISÉ';
+            } else if ((a.stock_alerte || 0) > 0 && phys <= a.stock_alerte) {
+                statusClass = 'status-low';
+                statusText = 'STOCK BAS';
+            }
+
+            return `<tr>
+                <td class="art-name" title="${a.nom || ''}">${a.nom || 'Article'}</td>
+                <td style="color: var(--text-secondary);">${init}</td>
+                <td class="val-vendu">${vendu}</td>
+                <td class="val-res">${res}</td>
+                <td class="val-phys">${phys}</td>
+                <td><span class="status-pill ${statusClass}">${statusText}</span></td>
+            </tr>`;
+        }).join('');
+
+        if (append) {
+            tableBody.innerHTML += content;
+        } else {
+            tableBody.innerHTML = content || `<tr><td colspan="6" style="padding: 40px; text-align: center; opacity: 0.5;">Aucun article trouvé.</td></tr>`;
+        }
+    }
+
+    function filtrer() {
+        const query = document.getElementById('searchArt').value.toLowerCase();
+        const start = document.getElementById('start_date').value;
+        const end = document.getElementById('end_date').value;
+
+        const filtered = allArticles.filter(a => {
+            const nameOk = (a.nom || "").toLowerCase().includes(query);
+            const created = (a.created_at || "").split('T')[0];
+            const hasDate = created.length > 0;
+            const dateOk = (!start && !end)
+                || (!hasDate)
+                || ((!start || created >= start) && (!end || created <= end));
+            return nameOk && dateOk;
+        });
+
+        render(filtered);
+    }
+
+    function telechargerStocks() {
+        const start = document.getElementById('start_date').value;
+        const end = document.getElementById('end_date').value;
+        const rangeLabel = `${start || '...'} → ${end || '...'}`;
+        document.getElementById('pStockRange').innerText = `Période : ${rangeLabel}`;
+        
+        const itemsForPdf = currentlyDisplayedArticles;
+
+        document.getElementById('pStockBody').innerHTML = itemsForPdf.map(a => {
+            const init = parseInt(a.stock_initial || 0, 10) || 0;
+            const vendu = parseInt(a.total_vendu || 0, 10) || 0;
+            const res = parseInt(a.stock_reserve || 0, 10) || 0;
+            const phys = init - vendu - res;
+            return `
+                <tr>
+                    <td style="padding: 6px 0;">${a.nom || 'Article'}</td>
+                    <td style="text-align:right">${init}</td>
+                    <td style="text-align:right">${vendu}</td>
+                    <td style="text-align:right">${res}</td>
+                    <td style="text-align:right">${phys}</td>
+                </tr>
+            `;
+        }).join('') || '<tr><td colspan="5" style="padding:10px 0;">Aucune donnée pour cette sélection</td></tr>';
+
+        window.print();
+    }
+
+    const waitForDB = setInterval(() => {
+        if (typeof localDB !== "undefined" && typeof db !== 'undefined' && db) {
+            clearInterval(waitForDB);
+            initPage();
+        }
+    }, 300);
+
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+    window.addEventListener('bestin-sync-state', updateStatus);
+</script>
+</body>
+</html>

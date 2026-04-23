@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BEST'IN - BADGES & RÉCOMPENSES</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <style>
+    :root { 
+        --bg: #0f172a; 
+        --card: #1e293b; 
+        --accent: #38bdf8; 
+        --gold: #facc15; 
+        --orange: #f97316;
+        --success: #22c55e;
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+    }
+
+    html, body {
+        height: 100%;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        margin:0;
+        background:#000;
+        color:var(--text-primary);
+        font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        display:flex;
+        justify-content:center;
+    }
+    
+    .c {
+        width:100%;
+        max-width:430px;
+        padding:16px;
+        background: var(--bg);
+        height: 100vh;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 24px;
+    }
+    .back-btn {
+        color: var(--text-primary);
+        text-decoration: none;
+        font-size: 1.8em;
+        line-height: 1;
+    }
+    .header h2 {
+        margin: 0;
+        font-size: 1.2em;
+        font-weight: 700;
+    }
+
+    .card {
+        background:var(--card);
+        border:1px solid #334155;
+        border-radius:18px;
+        padding:16px;
+        margin-bottom:16px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    
+    .b {
+        font-weight:700;
+        color:var(--gold);
+        font-size: 1.1em;
+        margin-bottom: 4px;
+    }
+    
+    .mut {
+        opacity:.8;
+        font-size:.9em;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+    
+    input, button {
+        width:100%;
+        padding:14px;
+        border-radius:12px;
+        border:none;
+        box-sizing:border-box;
+        font-size: 1em;
+    }
+    
+    input {
+        background:var(--bg);
+        color:var(--text-primary);
+        border:1px solid #334155;
+        margin: 16px 0 10px 0;
+    }
+    
+    button {
+        background:var(--accent);
+        color:#fff;
+        font-weight:700;
+        cursor: pointer;
+    }
+
+    button:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+
+    #statusBox {
+        margin-top: 12px;
+        font-size: 0.82em;
+        line-height: 1.5;
+        color: var(--text-secondary);
+    }
+
+    .warn {
+        color: var(--orange) !important;
+    }
+
+    .ok {
+        color: var(--success) !important;
+    }
+  </style>
+
+  <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<div class="c">
+  <div class="header">
+    <a href="dashboard.html" class="back-btn">‹</a>
+    <h2>BADGES & RÉCOMPENSES</h2>
+  </div>
+
+  <div class="card">
+    <div class="b" id="badgeName">Chargement...</div>
+    <div class="mut" id="badgeDesc"></div>
+  </div>
+
+  <div class="card">
+    <div class="b">Code Promo</div>
+    <div class="mut">Entrez un code fourni par l'administration BEST'IN pour gagner des jours d'abonnement.</div>
+    <input id="promoCode" placeholder="Ex: BESTIN-ANNIV-2026">
+    <button id="promoBtn" onclick="applyPromo()">Appliquer le code</button>
+    <div id="statusBox">Connexion internet requise pour appliquer un code promo.</div>
+  </div>
+
+  <div class="card">
+    <div class="mut" style="font-size: 0.8em;">
+        <b>Niveaux de badge :</b><br>
+        Bronze (30j) : +2j offerts<br>
+        Argent (90j) : +5j offerts<br>
+        Or (180j) : +10j offerts<br>
+        Diamant (365j) : +20j offerts
+    </div>
+  </div>
+</div>
+
+<script>
+function getBadge(days) {
+    if (days >= 365) return ['Badge: Diamant', 'Fidélité exceptionnelle (+20j)'];
+    if (days >= 180) return ['Badge: Or', 'Super vendeur confirmé (+10j)'];
+    if (days >= 90) return ['Badge: Argent', 'Vendeur régulier (+5j)'];
+    if (days >= 30) return ['Badge: Bronze', 'Vendeur actif (+2j)'];
+    return ['Badge: Nouveau', 'Continuez votre activité pour débloquer le badge Bronze.'];
+}
+
+function updatePromoStatus() {
+    const isOnline = navigator.onLine;
+    const box = document.getElementById('statusBox');
+    const btn = document.getElementById('promoBtn');
+
+    btn.disabled = !isOnline;
+
+    if (isOnline) {
+        box.innerText = "Connexion active. Vous pouvez appliquer un code promo.";
+        box.className = 'ok';
+    } else {
+        box.innerText = "Connexion internet requise pour appliquer un code promo.";
+        box.className = 'warn';
+    }
+}
+
+async function init() {
+    const p = JSON.parse(localStorage.getItem('bestin_profile') || '{}');
+    const created = new Date(p.created_at || Date.now());
+    const days = Math.max(0, Math.floor((Date.now() - created.getTime()) / 86400000));
+    const [name, desc] = getBadge(days);
+
+    document.getElementById('badgeName').innerText = name;
+    document.getElementById('badgeDesc').innerText = desc;
+
+    updatePromoStatus();
+}
+
+async function applyPromo() {
+    if (!navigator.onLine) {
+        alert('Connexion internet requise.');
+        return;
+    }
+
+    const code = document.getElementById('promoCode').value.trim().toUpperCase();
+    if (!code) return;
+
+    const { data: { session } } = await _sb.auth.getSession();
+    if (!session) {
+        location.assign('login.html');
+        return;
+    }
+
+    const btn = document.getElementById('promoBtn');
+    btn.disabled = true;
+    btn.innerText = "VÉRIFICATION...";
+
+    try {
+        const { data, error } = await _sb.rpc('apply_promo_code', { p_code: code });
+        if (error) {
+            alert(error.message);
+            return;
+        }
+
+        if (typeof refreshLocalCache === 'function') {
+            await refreshLocalCache();
+        }
+
+        alert(data || 'Code appliqué avec succès ! Votre abonnement a été prolongé.');
+        document.getElementById('promoCode').value = '';
+    } catch (err) {
+        console.error(err);
+        alert("Erreur lors de l'application du code promo.");
+    } finally {
+        updatePromoStatus();
+        btn.innerText = "Appliquer le code";
+    }
+}
+
+window.addEventListener('online', updatePromoStatus);
+window.addEventListener('offline', updatePromoStatus);
+
+init();
+</script>
+</body>
+</html>
